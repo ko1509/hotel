@@ -91,6 +91,45 @@ const PARTNER_STATUS = { candidate: '候補', applying: '申請中', active: '�
 
 const SNS_CHANNELS = ['Instagram', 'X', 'Pinterest'];
 
+// ---------- ピクトグラム（24pxグリッドの線のアイコン） ----------
+
+const ICONS = {
+  home: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.8"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.8"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.8"/>',
+  issue: '<path d="M12 6.5C10 5 7.5 4.5 4 4.5v14c3.5 0 6 .5 8 2 2-1.5 4.5-2 8-2v-14c-3.5 0-6 .5-8 2z"/><path d="M12 6.5v14"/>',
+  hotel: '<path d="M5 21V4.8a.8.8 0 0 1 .8-.8h8.4a.8.8 0 0 1 .8.8V21"/><path d="M15 10h3.2a.8.8 0 0 1 .8.8V21"/><path d="M3 21h18"/><path d="M8.5 8h1M11 8h1M8.5 11.5h1M11 11.5h1M8.5 15h1M11 15h1"/>',
+  archive: '<rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m21 15.5-5-5-9 9"/>',
+  compass: '<circle cx="12" cy="5" r="1.8"/><path d="M11 6.7 6 20.5M13 6.7l5 13.8M8.2 14.5h7.6"/>',
+  yen: '<circle cx="12" cy="12" r="9"/><path d="m8.5 7 3.5 5 3.5-5M12 12v5.5M9 12.5h6M9 15h6"/>',
+  megaphone: '<path d="M3.5 10v4a1 1 0 0 0 1 1H7l6 4V5L7 9H4.5a1 1 0 0 0-1 1z"/><path d="M16.5 9.5a3.5 3.5 0 0 1 0 5M19 7a7 7 0 0 1 0 10"/>',
+  glossary: '<path d="M4 6h8.5M8.2 4v2M6 6c.3 3.5 2.6 6.3 6 7.6M10.6 6c-.6 3.2-2.8 6.2-6.1 7.6"/><path d="m13 20 3.5-8.5L20 20M14.3 17.2h4.4"/>',
+  routine: '<rect x="3.5" y="5" width="17" height="15.5" rx="2"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/><path d="m9 14.8 2 2 4-4"/>',
+  decision: '<circle cx="12" cy="12" r="9"/><path d="M9.6 9.4a2.5 2.5 0 1 1 3.5 2.3c-.7.3-1.1.9-1.1 1.6v.5"/><path d="M12 16.8h.01"/>',
+  settings: '<path d="M4 7h9.5M18.5 7H20M4 17h3.5M12.5 17H20"/><circle cx="16" cy="7" r="2.3"/><circle cx="10" cy="17" r="2.3"/>',
+  plus: '<path d="M12 5v14M5 12h14"/>',
+  copy: '<rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2"/><path d="M15.5 8.5V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7.5a2 2 0 0 0 2 2h2.5"/>',
+  download: '<path d="M12 4v11M7 10.5l5 5 5-5M5 20h14"/>',
+  upload: '<path d="M12 16V5M7 9.5l5-5 5 5M5 20h14"/>',
+  pin: '<path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/>',
+  external: '<path d="M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  edit: '<path d="M4 20h4L19.2 8.8a2.1 2.1 0 0 0-3-3L5 17v3z"/><path d="m14.5 7.5 3 3"/>',
+  trash: '<path d="M4 7h16M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>',
+  up: '<path d="M12 19V5M6 11l6-6 6 6"/>',
+  down: '<path d="M12 5v14M6 13l6 6 6-6"/>',
+  note: '<path d="M6 3h8.5L19 7.5V21H6z"/><path d="M14 3v5h5M9 13h7M9 17h4.5"/>',
+  chat: '<path d="M4 5h16v11H9.5L5 20v-4H4z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  doc: '<path d="M6 3h12v18H6z"/><path d="M9 7.5h6M9 11h6M9 14.5h3.5"/>',
+  link: '<path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/>',
+  check: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="m8 12.5 3 3 5.5-6"/>',
+  image: '<rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m21 15.5-5-5-9 9"/>',
+  alert: '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4M12 16.8h.01"/>',
+  steps: '<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 12h3M14 12h3"/>',
+};
+
+function icon(name, cls = '') {
+  return `<svg class="ico ${cls}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICONS[name] || ''}</svg>`;
+}
+
 // ---------- ユーティリティ ----------
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -257,7 +296,9 @@ function normalizeHotel(h) {
     issueId: '', stage: 0,
     highlights: '', techniques: '', sources: '', unverified: '', notes: '',
     titleJa: '', titleEn: '', urlJa: '', urlEn: '', publishAt: '',
+    bodyJa: '', bodyEn: '', eyecatch: null,
     ...h,
+    figures: Array.isArray(h.figures) ? h.figures : [],
     checks: { ...(h.checks || {}) },
     drawing: { status: 'none', illustrator: '', contact: '', rights: '', scopeNote: '', fee: '', due: '', credit: '', sourceMaterial: '', sourcePermission: false, files: '', agreed: {}, ...(h.drawing || {}) },
     affiliate: { partnerId: '', url: '', disclosure: false, lastChecked: '', ...(h.affiliate || {}) },
@@ -496,17 +537,19 @@ ${terms.length ? terms.map(g => `- ${g.ja} → ${g.en}${g.note ? ` (${g.note})` 
 
 // ---------- ナビゲーション ----------
 
+// [キー, 画面名, タブバー用の短い名前, アイコン]
 const ROUTES = [
-  ['dashboard', 'ダッシュボード'],
-  ['issues', '号'],
-  ['hotels', 'ホテル記事'],
-  ['drawings', '線図'],
-  ['affiliate', 'アフィリエイト'],
-  ['sns', '集客・SNS'],
-  ['glossary', '用語集'],
-  ['routine', '定期作業'],
-  ['decisions', '未決定事項'],
-  ['settings', '設定・データ'],
+  ['dashboard', 'ダッシュボード', 'ホーム', 'home'],
+  ['issues', '号', '号', 'issue'],
+  ['hotels', 'ホテル記事', 'ホテル', 'hotel'],
+  ['archive', 'アーカイブ', 'アーカイブ', 'archive'],
+  ['drawings', '線図', '線図', 'compass'],
+  ['affiliate', 'アフィリエイト', '収益', 'yen'],
+  ['sns', '集客・SNS', '集客', 'megaphone'],
+  ['glossary', '用語集', '用語', 'glossary'],
+  ['routine', '定期作業', '定期', 'routine'],
+  ['decisions', '未決定事項', '未決定', 'decision'],
+  ['settings', '設定・データ', '設定', 'settings'],
 ];
 
 // 画面の切り替えはページ内で持つ（アーティファクトでは #/path がアドレスに届かないため）
@@ -525,11 +568,11 @@ function go(path) {
 
 function renderNav() {
   const { name } = currentRoute();
-  const active = name === 'hotel' ? 'hotels' : name === 'issue' ? 'issues' : name;
+  const active = { hotel: 'hotels', issue: 'issues', article: 'archive' }[name] || name;
   const openDecisions = state.decisions.filter(d => !d.done).length;
-  $('#nav').innerHTML = ROUTES.map(([k, label]) => {
+  $('#nav').innerHTML = ROUTES.map(([k, label, short, ico]) => {
     const count = k === 'decisions' && openDecisions ? `<span class="count">${openDecisions}</span>` : '';
-    return `<a href="#/${k}" class="${k === active ? 'active' : ''}">${label}${count}</a>`;
+    return `<a href="#/${k}" class="${k === active ? 'active' : ''}" aria-label="${label}">${icon(ico)}<span class="full">${label}</span><span class="short">${short}</span>${count}</a>`;
   }).join('');
 }
 
@@ -539,6 +582,7 @@ function render() {
     dashboard: viewDashboard, issues: viewIssues, issue: () => viewIssue(arg), hotels: viewHotels,
     hotel: () => viewHotel(arg), drawings: viewDrawings, affiliate: viewAffiliate, sns: viewSns,
     glossary: viewGlossary, routine: viewRoutine, decisions: viewDecisions, settings: viewSettings,
+    archive: viewArchive, article: () => viewArticle(arg),
   };
   $('#view').innerHTML = (views[name] || viewDashboard)();
   renderNav();
@@ -564,7 +608,7 @@ function viewDashboard() {
     const left = rel ? daysBetween(t, rel) : null;
     const progress = hs.length ? hs.reduce((s, h) => s + h.stage, 0) / (hs.length * STAGE_PUBLISHED) : 0;
     issueCard = `<a class="card link" href="#/issue/${ni.id}">
-      <div class="kpi-label">次の号</div>
+      <div class="kpi-label">${icon('issue')}次の号</div>
       <div class="kpi">${esc(issueLabel(ni))}<small>第${issueNumber(ni)}号</small></div>
       <div>${esc(ni.theme || 'テーマ未定')}</div>
       <div class="meta sub" style="margin:4px 0 0">公開日 ${fmtDate(ni.releaseDate)}${left != null ? `（あと${left}日）` : ''}・着手目安 ${ps ? fmtDate(ymd(ps)) : '未定'}</div>
@@ -572,14 +616,14 @@ function viewDashboard() {
       <div class="bar"><i style="width:${Math.round(progress * 100)}%"></i></div>
     </a>`;
   } else {
-    issueCard = `<div class="card"><div class="kpi-label">次の号</div><p>まだ号がありません。</p><button class="btn primary" data-act="issue-new">創刊号を作る</button></div>`;
+    issueCard = `<div class="card"><div class="kpi-label">次の号</div><p>まだ号がありません。</p><button class="btn primary" data-act="issue-new">${icon('plus')}創刊号を作る</button></div>`;
   }
 
   const month = ym(t);
   const rev = revenueOf(month);
   const goal = Number(st.revenueGoal) || 0;
   const revCard = `<a class="card link" href="#/affiliate">
-    <div class="kpi-label">今月の成果報酬（${month}）</div>
+    <div class="kpi-label">${icon('yen')}今月の成果報酬（${month}）</div>
     <div class="kpi">${yen(rev)}<small>/ 目標 ${yen(goal)}${st.goalIsMonthly ? '（月額）' : ''}</small></div>
     <div class="bar"><i style="width:${goal ? Math.min(100, Math.round(rev / goal * 100)) : 0}%"></i></div>
   </a>`;
@@ -587,7 +631,7 @@ function viewDashboard() {
   const w = routineProgress('weekly');
   const m = routineProgress('monthly');
   const routineCard = `<a class="card link" href="#/routine">
-    <div class="kpi-label">定期作業</div>
+    <div class="kpi-label">${icon('routine')}定期作業</div>
     <div>今週 ${w.done}/${w.total}・今月 ${m.done}/${m.total}</div>
     <div class="bar"><i style="width:${Math.round((w.done + m.done) / (w.total + m.total) * 100)}%"></i></div>
   </a>`;
@@ -613,11 +657,11 @@ function viewDashboard() {
   <p class="sub">${fmtDate(ymd(t))}・第${isoWeek(t).split('-W')[1]}週</p>
   <div class="grid two">${issueCard}${revCard}</div>
   <div class="grid two" style="margin-top:12px">${routineCard}
-    <a class="card link" href="#/decisions"><div class="kpi-label">未決定事項</div><div class="kpi">${openDecisions.length}<small>件</small></div></a>
+    <a class="card link" href="#/decisions"><div class="kpi-label">${icon('decision')}未決定事項</div><div class="kpi">${openDecisions.length}<small>件</small></div></a>
   </div>
-  <h2>確認すること</h2>
+  <h2>${icon('alert')}確認すること</h2>
   ${alerts.length ? alerts.map(a => `<div class="alert">${a}</div>`).join('') : '<div class="empty">いまは特にありません。</div>'}
-  <h2>進行中のホテル記事</h2>
+  <h2>${icon('hotel')}進行中のホテル記事</h2>
   ${hotelList(state.hotels.filter(h => h.stage < STAGE_PUBLISHED).slice(0, 8))}`;
 }
 
@@ -627,7 +671,7 @@ function viewIssues() {
   const issues = sortedIssues();
   return `<h1>号</h1>
   <p class="sub">季節ごとに1号（年4回）。公開の約${state.settings.prepMonths}か月前から着手します。</p>
-  <div class="toolbar"><button class="btn primary" data-act="issue-new">号を追加</button></div>
+  <div class="toolbar"><button class="btn primary" data-act="issue-new">${icon('plus')}号を追加</button></div>
   ${issues.length ? `<div class="grid two">${issues.map(issueCard).join('')}</div>` : '<div class="empty">まだ号がありません。</div>'}`;
 }
 
@@ -655,7 +699,7 @@ function viewIssue(id) {
   <p class="sub">${ISSUE_STATUS[i.status]}・公開日 ${fmtDate(i.releaseDate)}・着手目安 ${ps ? fmtDate(ymd(ps)) : '未定'}</p>
   <div class="toolbar">
     <button class="btn" data-act="issue-edit" data-id="${i.id}">編集</button>
-    <button class="btn primary" data-act="hotel-new" data-issue="${i.id}">この号にホテルを追加</button>
+    <button class="btn primary" data-act="hotel-new" data-issue="${i.id}">${icon('plus')}この号にホテルを追加</button>
     <span class="spacer"></span>
     <button class="btn danger" data-act="issue-delete" data-id="${i.id}">削除</button>
   </div>
@@ -702,7 +746,7 @@ function viewHotels() {
     <select id="hotel-issue"><option value="">すべての号</option><option value="_none" ${f.issue === '_none' ? 'selected' : ''}>未割り当て</option>
       ${sortedIssues().map(i => `<option value="${i.id}" ${f.issue === i.id ? 'selected' : ''}>${esc(issueLabel(i))}</option>`).join('')}</select>
     <select id="hotel-stage"><option value="">すべての段階</option>${STAGES.map((s, n) => `<option value="${n}" ${f.stage === String(n) ? 'selected' : ''}>${s}</option>`).join('')}</select>
-    <button class="btn primary" data-act="hotel-new">ホテルを追加</button>
+    <button class="btn primary" data-act="hotel-new">${icon('plus')}ホテルを追加</button>
   </div>
   <div id="hotel-results">${hotelList(list)}</div>
   ${state.hotels.length ? `<h2>建築から探す・地域から探す</h2>
@@ -737,6 +781,7 @@ function hotelList(list) {
     const w = hotelWarnings(h);
     const issue = issueById(h.issueId);
     return `<a class="card link list-item" href="#/hotel/${h.id}">
+      <div class="thumb">${h.eyecatch ? `<img src="${esc(imgSrc(h.eyecatch))}" alt="" loading="lazy">` : icon('hotel')}</div>
       <div class="grow">
         <div class="title">${esc(h.nameJa || '(無題)')}${h.nameEn ? ` <span class="meta">${esc(h.nameEn)}</span>` : ''}</div>
         <div class="meta">${esc(h.architect || '建築家未入力')}・${esc(h.region || h.location || '地域未入力')}・${esc(issueLabel(issue))}</div>
@@ -777,14 +822,14 @@ function viewHotel(id) {
   const mapUrl = h.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.nameJa + ' ' + h.location)}` : '';
   const srcLines = lines(h.sources);
 
-  return `<p class="sub" style="margin:0"><a href="#/hotels">← ホテル記事</a></p>
+  return `<div class="toolbar crumbs"><a class="back" href="#/hotels">${icon('back')}ホテル記事</a><span class="spacer"></span><a class="btn small" href="#/article/${h.id}">${icon('archive')}記事を表示</a></div>
   <h1>${esc(h.nameJa || '(無題)')}</h1>
   <p class="sub">${esc(h.architect || '建築家未入力')}・${esc(issueLabel(issueById(h.issueId)))}${w.length ? ' ・ ' + w.map(x => `<span class="tag warn">${esc(x)}</span>`).join('') : ''}</p>
 
-  <h2>制作の段階</h2>
+  <h2>${icon('steps')}制作の段階</h2>
   <div class="stages">${STAGES.map((s, n) => `<button data-act="stage" data-id="${h.id}" data-stage="${n}" class="${n < h.stage ? 'past' : n === h.stage ? 'current' : ''}">${n + 1}. ${s}</button>`).join('')}</div>
 
-  <div class="section"><h2>基本情報</h2>
+  <div class="section"><h2>${icon('hotel')}基本情報</h2>
   <p class="sub">事実（所在地・開業年・設計者・施工者）は公式サイトか一次資料で確認し、出典を残します。</p>
   <div class="fields">
     ${hf(h, 'nameJa', 'ホテル名（日本語）')}
@@ -801,7 +846,7 @@ function viewHotel(id) {
     ${hf(h, 'publishAt', '予約投稿日時', 'datetime-local')}
   </div></div>
 
-  <div class="section"><h2>取材メモ</h2>
+  <div class="section"><h2>${icon('note')}取材メモ</h2>
   <div class="fields">
     ${hf(h, 'highlights', '見どころ（3〜5点）', 'textarea', { wide: true, placeholder: '1行に1点' })}
     ${hf(h, 'techniques', '建築技法（構造・素材・空間構成）', 'textarea', { wide: true })}
@@ -809,16 +854,16 @@ function viewHotel(id) {
     ${hf(h, 'unverified', '要確認（出典が確認できない記述）', 'textarea', { wide: true, placeholder: '解消したら行を消す' })}
   </div></div>
 
-  <div class="section"><h2>記事作成用Claudeへの依頼文</h2>
+  <div class="section"><h2>${icon('chat')}記事作成用Claudeへの依頼文</h2>
   <p class="sub">入力済みの情報から依頼文を作ります。コピーして記事作成用のClaudeに渡してください。英語版の依頼文には用語集が入ります。</p>
   <div class="toolbar">
-    <button class="btn primary" data-act="copy-prompt" data-lang="ja" data-id="${h.id}">日本語版の依頼文をコピー</button>
-    <button class="btn" data-act="copy-prompt" data-lang="en" data-id="${h.id}">英語版の依頼文をコピー</button>
+    <button class="btn primary" data-act="copy-prompt" data-lang="ja" data-id="${h.id}">${icon('copy')}日本語版の依頼文をコピー</button>
+    <button class="btn" data-act="copy-prompt" data-lang="en" data-id="${h.id}">${icon('copy')}英語版の依頼文をコピー</button>
   </div>
   <details><summary class="meta" style="cursor:pointer">日本語版の依頼文を見る</summary><pre class="prompt">${esc(promptJa(h))}</pre></details>
   </div>
 
-  <div class="section"><h2>記事</h2>
+  <div class="section"><h2>${icon('doc')}記事</h2>
   <div class="fields">
     ${hf(h, 'titleJa', '記事タイトル（日本語）', 'text', { wide: true, hint: '「ホテル名＋建築家名」「ホテル名＋建築」など探されやすい語を入れる' })}
     ${hf(h, 'titleEn', '記事タイトル（英語）', 'text', { wide: true })}
@@ -826,9 +871,16 @@ function viewHotel(id) {
     ${hf(h, 'urlEn', '記事URL（英語）', 'url')}
     ${hf(h, 'en.status', '英語版', 'select', { options: [['none', '未着手'], ['requested', '翻訳依頼済'], ['reviewing', '固有名詞・用語を確認中'], ['ready', '公開できる'], ['published', '公開済'], ['later', '後日公開（日本語のみ先行）']] })}
     ${hf(h, 'en.note', '英語版のメモ（公開予定など）')}
+    ${hf(h, 'bodyJa', '本文（確定稿・日本語）', 'textarea', { wide: true, rows: 10, hint: '「## 見出し」「- 箇条書き」「**強調**」「[文字](URL)」が使えます。アーカイブでサイトに近い形で表示します。' })}
+    ${hf(h, 'bodyEn', '本文（確定稿・英語）', 'textarea', { wide: true, rows: 6 })}
   </div></div>
 
-  <div class="section"><h2>線図</h2>
+  <div class="section"><h2>${icon('image')}アイキャッチ・図版</h2>
+  <p class="sub">アイキャッチ（外観の線図）と、平面図・断面図などの図版を取り込みます。画像（PNG・JPEG・WebP）とSVGが使えます。</p>
+  ${imageEditor(h)}
+  </div>
+
+  <div class="section"><h2>${icon('compass')}線図の発注</h2>
   <div class="fields">
     ${hf(h, 'drawing.status', '状態', 'select', { options: Object.entries(DRAWING_STATUS) })}
     ${hf(h, 'drawing.illustrator', 'イラストレーター')}
@@ -845,7 +897,7 @@ function viewHotel(id) {
   <ul class="checklist">${DRAWING_AGREEMENTS.map(([k, l]) => `<li class="${h.drawing.agreed[k] ? 'done' : ''}"><input type="checkbox" id="ag-${k}" data-h="drawing.agreed.${k}" ${h.drawing.agreed[k] ? 'checked' : ''}><label for="ag-${k}">${l}</label></li>`).join('')}</ul>
   </div>
 
-  <div class="section"><h2>予約リンク</h2>
+  <div class="section"><h2>${icon('link')}予約リンク</h2>
   <div class="fields">
     ${hf(h, 'affiliate.partnerId', '提携先', 'select', { options: partnerOpts })}
     ${hf(h, 'affiliate.url', 'アフィリエイトリンク', 'url')}
@@ -853,15 +905,285 @@ function viewHotel(id) {
     ${hf(h, 'affiliate.lastChecked', 'リンクの最終確認日', 'date')}
   </div></div>
 
-  <div class="section"><h2>公開前チェックリスト</h2>
+  <div class="section"><h2>${icon('check')}公開前チェックリスト</h2>
   <ul class="checklist">${PREPUBLISH_CHECKS.map(([k, l]) => `<li class="${h.checks[k] ? 'done' : ''}"><input type="checkbox" id="ck-${k}" data-h="checks.${k}" ${h.checks[k] ? 'checked' : ''}><label for="ck-${k}">${l}</label></li>`).join('')}</ul>
   <p class="meta">${checksDone(h)} / ${PREPUBLISH_CHECKS.length} 完了</p>
   </div>
 
-  <div class="section"><h2>メモ</h2>
+  <div class="section"><h2>${icon('edit')}メモ</h2>
   <div class="fields">${hf(h, 'notes', 'メモ', 'textarea', { wide: true })}</div>
-  <div class="toolbar"><span class="spacer"></span><button class="btn danger" data-act="hotel-delete" data-id="${h.id}">このホテルを削除</button></div>
+  <div class="toolbar"><span class="spacer"></span><button class="btn danger" data-act="hotel-delete" data-id="${h.id}">${icon('trash')}このホテルを削除</button></div>
   </div>`;
+}
+
+// ---------- 画像（アイキャッチ・図版） ----------
+// アーティファクトでは assets 機能に保存し、id だけをデータに持つ。
+// ローカルで開いたときは縮小した画像を data URL として持つ。
+
+function imgSrc(img) { return img?.assetId ? `/_blob/${img.assetId}` : img?.data || ''; }
+
+async function assetsCap() {
+  if (!window.claude?.use) return null;
+  return window.claude.use('assets').catch(() => null);
+}
+
+function blobToDataURL(blob) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(blob);
+  });
+}
+
+// 大きな画像は長辺 max px に縮小する。SVG はそのまま使う。
+async function prepareImage(file, max) {
+  if (file.type === 'image/svg+xml') return file;
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, max / Math.max(bmp.width, bmp.height));
+  if (scale === 1 && file.size < 1.5e6) return file;
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width * scale);
+  c.height = Math.round(bmp.height * scale);
+  c.getContext('2d').drawImage(bmp, 0, 0, c.width, c.height);
+  const blob = await new Promise(r => c.toBlob(r, 'image/webp', 0.9));
+  return blob || file;
+}
+
+async function storeImage(file) {
+  const assets = await assetsCap();
+  if (cloud.db && !assets) throw new Error('no-assets');
+  const blob = await prepareImage(file, assets ? 2400 : 1400);
+  const img = { id: uid(), alt: '', caption: '', credit: '' };
+  if (assets) img.assetId = (await assets.upload(blob, file.type === 'image/svg+xml' ? { contentType: 'image/svg+xml' } : undefined)).id;
+  else img.data = await blobToDataURL(blob);
+  return img;
+}
+
+async function dropImage(img) {
+  if (!img?.assetId) return;
+  const assets = await assetsCap();
+  if (assets) await assets.delete(img.assetId).catch(() => {});
+}
+
+async function addImages(h, kind, files) {
+  const list = [...files].filter(f => f.type.startsWith('image/'));
+  if (!list.length) { toast('画像ファイルを選んでください'); return; }
+  toast('画像を取り込んでいます…');
+  try {
+    if (kind === 'eyecatch') {
+      const img = await storeImage(list[0]);
+      if (h.eyecatch) {
+        img.alt = h.eyecatch.alt; img.credit = h.eyecatch.credit;
+        await dropImage(h.eyecatch);
+      }
+      h.eyecatch = img;
+    } else {
+      for (const f of list) h.figures.push(await storeImage(f));
+    }
+    save();
+    rerender();
+    toast('取り込みました');
+  } catch (e) {
+    console.warn('image failed', e);
+    toast(e?.message === 'no-assets' ? '画像を保存する許可がありません' : e?.code === 'quota_exceeded' ? '画像の保存容量の上限です' : '画像を取り込めませんでした');
+  }
+}
+
+// ローカル版から読み込んだ data URL の画像を、クラウドでは assets に移す
+async function liftDataImages() {
+  const assets = await assetsCap();
+  if (!assets) return;
+  let moved = 0;
+  for (const h of state.hotels) {
+    for (const img of [h.eyecatch, ...h.figures].filter(Boolean)) {
+      if (img.assetId || !img.data) continue;
+      try {
+        const blob = await (await fetch(img.data)).blob();
+        img.assetId = (await assets.upload(blob)).id;
+        delete img.data;
+        moved++;
+      } catch (e) { console.warn('lift failed', e); }
+    }
+  }
+  if (moved) { save(); rerender(); }
+}
+
+function imageEditor(h) {
+  const e = h.eyecatch;
+  const fig = (f, n) => `<div class="fig-row">
+      <div class="fig-img"><img src="${esc(imgSrc(f))}" alt="${esc(f.caption)}" loading="lazy"></div>
+      <div class="grow fields">
+        ${hf(h, `figures.${n}.caption`, `Fig.${n + 1} キャプション`, 'text', { wide: true, placeholder: '例：2階平面図' })}
+        ${hf(h, `figures.${n}.credit`, 'クレジット・出典', 'text', { wide: true })}
+        <div class="toolbar wide" style="margin:0">
+          <button class="btn small icon-only" data-act="fig-move" data-id="${h.id}" data-n="${n}" data-dir="-1" aria-label="前へ" ${n === 0 ? 'disabled' : ''}>${icon('up')}</button>
+          <button class="btn small icon-only" data-act="fig-move" data-id="${h.id}" data-n="${n}" data-dir="1" aria-label="後ろへ" ${n === h.figures.length - 1 ? 'disabled' : ''}>${icon('down')}</button>
+          <span class="spacer"></span>
+          <button class="btn small danger" data-act="fig-delete" data-id="${h.id}" data-n="${n}">${icon('trash')}削除</button>
+        </div>
+      </div>
+    </div>`;
+  return `<h3>アイキャッチ</h3>
+  <div class="eyecatch-edit">
+    <label class="drop ${e ? 'has' : ''}" for="eyecatch-file" data-drop="eyecatch">
+      ${e ? `<img src="${esc(imgSrc(e))}" alt="${esc(e.alt)}">` : `${icon('upload')}<span>外観の線図を選ぶか、ここにドロップ</span>`}
+    </label>
+    <input type="file" id="eyecatch-file" accept="image/*" data-img="eyecatch" hidden>
+    ${e ? `<div class="fields">
+      ${hf(h, 'eyecatch.alt', '代替テキスト', 'text', { placeholder: '例：〇〇ホテル外観の線図' })}
+      ${hf(h, 'eyecatch.credit', 'クレジット', 'text', { placeholder: h.drawing.credit || '例：Drawing: 山田花子' })}
+    </div>
+    <div class="toolbar"><label class="btn small" for="eyecatch-file">${icon('upload')}差し替える</label><button class="btn small danger" data-act="eyecatch-delete" data-id="${h.id}">${icon('trash')}外す</button></div>` : ''}
+  </div>
+  <h3>図版（${h.figures.length}）</h3>
+  ${h.figures.map(fig).join('')}
+  <label class="drop small" for="figure-file" data-drop="figures">${icon('plus')}<span>図版を追加（複数選べます）</span></label>
+  <input type="file" id="figure-file" accept="image/*" multiple data-img="figures" hidden>`;
+}
+
+// ---------- 本文の簡易マークダウン ----------
+
+function inlineMd(t) {
+  return esc(t)
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+}
+function md(text) {
+  const out = [];
+  let para = [];
+  let list = null;
+  const flushP = () => { if (para.length) out.push(`<p>${para.map(inlineMd).join('<br>')}</p>`); para = []; };
+  const flushL = () => { if (list) out.push(`<ul>${list.map(li => `<li>${inlineMd(li)}</li>`).join('')}</ul>`); list = null; };
+  for (const raw of String(text || '').split('\n')) {
+    const l = raw.trimEnd();
+    let m;
+    if (!l.trim()) { flushP(); flushL(); continue; }
+    if ((m = /^(#{1,3})\s+(.*)$/.exec(l))) { flushP(); flushL(); const lv = m[1].length + 1; out.push(`<h${lv}>${inlineMd(m[2])}</h${lv}>`); continue; }
+    if ((m = /^\s*[-・*]\s+(.*)$/.exec(l))) { flushP(); (list ||= []).push(m[1]); continue; }
+    flushL();
+    para.push(l);
+  }
+  flushP();
+  flushL();
+  return out.join('');
+}
+function linkify(t) {
+  return esc(t).replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
+}
+
+// ---------- 画面：アーカイブ ----------
+
+let archiveFilter = { q: '', issue: '', published: false };
+
+function archiveHotels() {
+  const f = archiveFilter;
+  const q = f.q.trim().toLowerCase();
+  return state.hotels.filter(h => {
+    if (f.published && h.stage !== STAGE_PUBLISHED) return false;
+    if (f.issue && h.issueId !== f.issue) return false;
+    return !q || [h.nameJa, h.nameEn, h.titleJa, h.titleEn, h.architect, h.architectEn, h.region, h.tags].join(' ').toLowerCase().includes(q);
+  });
+}
+
+function issueNo(issue) { return issue ? `No.${pad(issueNumber(issue))}` : 'No.—'; }
+
+function archiveCard(h) {
+  const issue = issueById(h.issueId);
+  return `<a class="arch-card" href="#/article/${h.id}">
+    <div class="arch-thumb">${h.eyecatch ? `<img src="${esc(imgSrc(h.eyecatch))}" alt="${esc(h.eyecatch.alt)}" loading="lazy">` : `<span class="ph">${icon('hotel')}</span>`}</div>
+    <div class="arch-body">
+      <div class="eyebrow">${issueNo(issue)}${h.region ? ` · ${esc(h.region)}` : ''}</div>
+      <h3>${esc(h.titleJa || h.nameJa || '(無題)')}</h3>
+      <div class="meta">${esc(h.architect || '')}</div>
+      ${h.stage === STAGE_PUBLISHED ? '' : `<span class="tag">下書き・${STAGES[h.stage]}</span>`}
+    </div>
+  </a>`;
+}
+
+function archiveResults() {
+  const list = archiveHotels();
+  if (!list.length) return `<div class="empty">${icon('archive')}<div>表示できる記事がありません。</div></div>`;
+  const groups = [...sortedIssues()].reverse().map(i => [i, list.filter(h => h.issueId === i.id)]);
+  groups.push([null, list.filter(h => !issueById(h.issueId))]);
+  return groups.filter(([, hs]) => hs.length).map(([i, hs]) => `<section class="arch-group">
+    <header><span class="num">${issueNo(i)}</span><h2>${i ? esc(issueLabel(i)) : '号が未定'}</h2>${i?.theme ? `<span class="theme">${esc(i.theme)}</span>` : ''}</header>
+    <div class="arch-grid">${hs.map(archiveCard).join('')}</div>
+  </section>`).join('');
+}
+
+function viewArchive() {
+  const f = archiveFilter;
+  return `<h1>アーカイブ</h1>
+  <p class="sub">号ごとに、サイトに近い形で記事を見返せます。カードを開くと記事のページになります。</p>
+  <div class="toolbar">
+    <input type="search" id="archive-q" placeholder="ホテル名・建築家・地域で検索" value="${esc(f.q)}">
+    <select id="archive-issue"><option value="">すべての号</option>${sortedIssues().map(i => `<option value="${i.id}" ${f.issue === i.id ? 'selected' : ''}>${esc(issueLabel(i))}</option>`).join('')}</select>
+    <label class="switch"><input type="checkbox" id="archive-published" ${f.published ? 'checked' : ''}>公開済みのみ</label>
+  </div>
+  <div id="archive-results">${archiveResults()}</div>`;
+}
+
+// ---------- 画面：記事（サイトに近い表示） ----------
+
+let articleLang = 'ja';
+
+function viewArticle(id) {
+  const h = hotelById(id);
+  if (!h) return `<p>記事が見つかりません。</p><a href="#/archive">アーカイブへ</a>`;
+  const en = articleLang === 'en';
+  const issue = issueById(h.issueId);
+  const T = en
+    ? { basic: 'Basic information', hl: 'Highlights', tech: 'Architectural techniques', figs: 'Figures', access: 'Access & booking', src: 'Sources', hotel: 'Hotel', loc: 'Location', opened: 'Opened', arch: 'Architect', con: 'Contractor', map: 'View on map', book: 'Check availability', ad: 'This article contains affiliate links.', none: 'No English text yet.' }
+    : { basic: '基本情報', hl: '見どころ', tech: '建築技法', figs: '図版', access: 'アクセス・予約', src: '出典', hotel: 'ホテル名', loc: '所在地', opened: '開業年', arch: '設計', con: '施工', map: '地図で見る', book: '空室を確認する', ad: state.settings.disclosureText, none: '' };
+  const name = en ? (h.nameEn || h.nameJa) : h.nameJa;
+  const title = en ? (h.titleEn || h.nameEn || h.nameJa) : (h.titleJa || h.nameJa);
+  const architect = en ? (h.architectEn || h.architect) : h.architect;
+  const body = en ? h.bodyEn : h.bodyJa;
+  const mapUrl = h.location ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(h.nameJa + ' ' + h.location)}` : '';
+  const credit = h.eyecatch?.credit || h.drawing.credit;
+  let n = 0;
+  const head = label => `<h2 class="sec"><span class="num">${pad(++n)}</span>${label}</h2>`;
+  const facts = [[T.hotel, name], [T.loc, h.location], [T.opened, h.openedYear], [T.arch, architect], [T.con, h.contractor]].filter(([, v]) => v);
+  // 番号は紙面の順に振るので、基本情報を先に組む
+  const basic = facts.length ? `<section>${head(T.basic)}<dl class="facts">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl></section>` : '';
+
+  let main;
+  if (body) {
+    main = `<div class="prose">${md(body)}</div>`;
+  } else if (en) {
+    main = `<p class="meta">${T.none}</p>`;
+  } else {
+    const hl = lines(h.highlights);
+    main = (hl.length ? `<section>${head(T.hl)}<ol class="points">${hl.map(x => `<li>${inlineMd(x.replace(/^[-・*\d.、)\s]+/, ''))}</li>`).join('')}</ol></section>` : '')
+      + (h.techniques ? `<section>${head(T.tech)}<div class="prose">${md(h.techniques)}</div></section>` : '');
+    if (!main) main = '<p class="meta">本文はまだありません。ホテル記事の「記事」に確定稿を入れるか、取材メモの見どころ・建築技法を入力すると、ここに表示されます。</p>';
+  }
+
+  return `<div class="toolbar crumbs">
+    <a class="back" href="#/archive">${icon('back')}アーカイブ</a>
+    <span class="spacer"></span>
+    <div class="seg" role="group" aria-label="言語">
+      <button data-act="article-lang" data-lang="ja" class="${en ? '' : 'on'}">日本語</button><button data-act="article-lang" data-lang="en" class="${en ? 'on' : ''}">English</button>
+    </div>
+    <a class="btn small" href="#/hotel/${h.id}">${icon('edit')}編集</a>
+  </div>
+  <article class="paper" lang="${en ? 'en' : 'ja'}">
+    <div class="eyebrow">${issueNo(issue)}${issue ? ` · ${esc(en ? issueLabelEn(issue) : issueLabel(issue))}` : ''}${h.region ? ` · ${esc(h.region)}` : ''}</div>
+    <h1 class="art-title">${esc(title || '(無題)')}</h1>
+    <p class="art-meta">${[architect, h.openedYear].filter(Boolean).map(esc).join(' · ')}</p>
+    ${h.stage !== STAGE_PUBLISHED ? `<p class="draft">${icon('edit')}下書き（${STAGES[h.stage]}）</p>` : ''}
+    ${h.affiliate.url ? `<p class="ad">${esc(T.ad)}</p>` : ''}
+    <figure class="eyecatch">${h.eyecatch ? `<img src="${esc(imgSrc(h.eyecatch))}" alt="${esc(h.eyecatch.alt || name)}">` : `<div class="ph">${icon('compass')}<span>${en ? 'Line drawing' : '線図（未設定）'}</span></div>`}
+      ${credit ? `<figcaption>${esc(credit)}</figcaption>` : ''}</figure>
+    ${basic}
+    ${main}
+    ${h.figures.length ? `<section>${head(T.figs)}<div class="figs">${h.figures.map((f, i) => `<figure><img src="${esc(imgSrc(f))}" alt="${esc(f.caption)}" loading="lazy"><figcaption><span class="num">Fig.${i + 1}</span>${esc(f.caption)}${f.credit ? `<small>${esc(f.credit)}</small>` : ''}</figcaption></figure>`).join('')}</div></section>` : ''}
+    ${mapUrl || h.affiliate.url ? `<section>${head(T.access)}${h.location ? `<p>${icon('pin')}${esc(h.location)}</p>` : ''}<div class="toolbar">
+      ${mapUrl ? `<a class="btn" href="${mapUrl}" target="_blank" rel="noopener">${icon('pin')}${T.map}</a>` : ''}
+      ${h.affiliate.url ? `<a class="btn primary" href="${esc(h.affiliate.url)}" target="_blank" rel="noopener sponsored">${icon('external')}${T.book}</a>` : ''}</div></section>` : ''}
+    ${lines(h.sources).length ? `<section>${head(T.src)}<ol class="sources">${lines(h.sources).map(x => `<li>${linkify(x)}</li>`).join('')}</ol></section>` : ''}
+  </article>`;
 }
 
 // ---------- 画面：線図 ----------
@@ -871,7 +1193,7 @@ function viewDrawings() {
   const counts = Object.keys(DRAWING_STATUS).map(k => `<span class="tag ${k === 'delivered' ? 'ok' : k === 'none' ? 'warn' : ''}">${DRAWING_STATUS[k]} ${state.hotels.filter(h => h.drawing.status === k).length}</span>`).join('');
   return `<h1>線図</h1>
   <p class="sub">アイキャッチはホテル外観の線図。発注前に権利の帰属と利用範囲を決め、書面（メール可）で合意します。</p>
-  <div class="toolbar">${counts}<span class="spacer"></span><button class="btn" data-act="drawing-csv">発注用リストをCSVで書き出す</button><button class="btn" data-act="drawing-copy">表をコピー</button></div>
+  <div class="toolbar">${counts}<span class="spacer"></span><button class="btn" data-act="drawing-csv">${icon('download')}発注用リストをCSVで書き出す</button><button class="btn" data-act="drawing-copy">${icon('copy')}表をコピー</button></div>
   ${rows.length ? `<div class="table-wrap"><table>
     <thead><tr><th>ホテル</th><th>号</th><th>状態</th><th>イラストレーター</th><th>権利</th><th>合意</th><th>元資料</th><th>納期</th></tr></thead>
     <tbody>${rows.map(h => {
@@ -913,7 +1235,7 @@ function viewAffiliate() {
   <p class="sub">当面は宿泊予約のみ。紹介するホテルは建築的な価値で選び、報酬の高さで選ばない。</p>
 
   <h2>提携先</h2>
-  <div class="toolbar"><button class="btn primary" data-act="partner-new">提携先を追加</button></div>
+  <div class="toolbar"><button class="btn primary" data-act="partner-new">${icon('plus')}提携先を追加</button></div>
   <div class="table-wrap"><table>
     <thead><tr><th>提携先</th><th>状態</th><th>規約確認日</th><th>報酬条件</th><th>規約の要点</th><th>設置記事</th><th></th></tr></thead>
     <tbody>${state.partners.map(p => `<tr>
@@ -929,7 +1251,7 @@ function viewAffiliate() {
 
   <h2>月ごとの成果</h2>
   <p class="sub">目標 ${yen(goal)}${st.goalIsMonthly ? '／月' : ''}${st.goalDeadline ? `・達成時期 ${esc(st.goalDeadline)}` : '・達成時期は未定'}（<a href="#/settings">設定で変更</a>）</p>
-  <div class="toolbar"><button class="btn primary" data-act="result-new">成果を記録</button></div>
+  <div class="toolbar"><button class="btn primary" data-act="result-new">${icon('plus')}成果を記録</button></div>
   ${months.length ? `<div class="table-wrap"><table>
     <thead><tr><th>月</th><th class="num">クリック</th><th class="num">成果件数</th><th class="num">報酬</th><th>目標比</th></tr></thead>
     <tbody>${months.map(m => {
@@ -992,7 +1314,7 @@ function viewSns() {
   <p class="sub">中心にするチャネルは検索（SEO）、Instagram、X、Pinterest。号の公開日に告知し、線図を投稿の画像に使います（使用範囲は線図の合意内容に従う）。</p>
 
   <h2>投稿の予定と記録</h2>
-  <div class="toolbar"><button class="btn primary" data-act="sns-new">投稿を追加</button>
+  <div class="toolbar"><button class="btn primary" data-act="sns-new">${icon('plus')}投稿を追加</button>
   ${nextIssue() ? `<button class="btn" data-act="sns-issue">次の号の告知をまとめて追加</button>` : ''}</div>
   ${posts.length ? `<div class="table-wrap"><table>
     <thead><tr><th>日付</th><th>チャネル</th><th>内容</th><th>線図の利用範囲</th><th>状態</th><th></th></tr></thead>
@@ -1038,7 +1360,7 @@ function viewGlossary() {
   const list = [...state.glossary].sort((a, b) => (a.kind || '').localeCompare(b.kind || '') || a.ja.localeCompare(b.ja, 'ja'));
   return `<h1>用語集</h1>
   <p class="sub">ホテル名・建築家名・地名は公式の英語表記に合わせます。英語版の依頼文に自動で入ります。</p>
-  <div class="toolbar"><button class="btn primary" data-act="term-new">用語を追加</button><span class="spacer"></span>
+  <div class="toolbar"><button class="btn primary" data-act="term-new">${icon('plus')}用語を追加</button><span class="spacer"></span>
     <button class="btn" data-act="glossary-copy">用語集をテキストでコピー</button></div>
   ${list.length ? `<div class="table-wrap"><table>
     <thead><tr><th>種類</th><th>日本語</th><th>英語</th><th>メモ・出典</th><th></th></tr></thead>
@@ -1108,7 +1430,7 @@ function viewDecisions() {
     <button class="btn small" data-act="decision-edit" data-id="${d.id}">編集</button></li>`;
   return `<h1>未決定事項</h1>
   <p class="sub">決まったら内容を記録し、マニュアルの該当の章に反映します。</p>
-  <div class="toolbar"><button class="btn primary" data-act="decision-new">項目を追加</button></div>
+  <div class="toolbar"><button class="btn primary" data-act="decision-new">${icon('plus')}項目を追加</button></div>
   <div class="card"><ul class="checklist">${open.map(item).join('') || '<li class="meta">すべて決まりました。</li>'}</ul></div>
   ${done.length ? `<h2>決定済み（${done.length}）</h2><div class="card"><ul class="checklist">${done.map(item).join('')}</ul></div>` : ''}`;
 }
@@ -1169,9 +1491,9 @@ function viewSettings() {
   <h2>データ</h2>
   <p class="sub">${cloud.db ? 'データはクラウドに保存され、別の端末から開いても同じデータが見られます。念のため、ときどきJSONで書き出してください。' : 'データはこのブラウザだけに保存されています。定期的にJSONで書き出してください。'}${st.lastExportAt ? `最終書き出し：${new Date(st.lastExportAt).toLocaleString('ja-JP')}` : 'まだ書き出していません。'}</p>
   <div class="toolbar">
-    <button class="btn primary" data-act="export">JSONで書き出す</button>
-    <button class="btn" data-act="export-copy">JSONをコピー</button>
-    <label class="btn" for="import-file" style="display:inline-block">JSONを読み込む</label>
+    <button class="btn primary" data-act="export">${icon('download')}JSONで書き出す</button>
+    <button class="btn" data-act="export-copy">${icon('copy')}JSONをコピー</button>
+    <label class="btn" for="import-file">${icon('upload')}JSONを読み込む</label>
     <input type="file" id="import-file" accept="application/json,.json" hidden>
     <span class="spacer"></span>
     <button class="btn danger" data-act="reset">すべて消去</button>
@@ -1259,6 +1581,7 @@ const actions = {
   'hotel-delete': async ({ id }) => {
     const h = hotelById(id);
     if (!await ask(`「${h.nameJa}」を削除しますか？`, '削除')) return;
+    for (const img of [h.eyecatch, ...h.figures]) await dropImage(img);
     state.hotels = state.hotels.filter(x => x.id !== id);
     state.snsPosts.forEach(p => { if (p.hotelId === id) p.hotelId = ''; });
     save();
@@ -1276,6 +1599,31 @@ const actions = {
   'copy-prompt': ({ id, lang }) => {
     const h = hotelById(id);
     copyText(lang === 'en' ? promptEn(h) : promptJa(h));
+  },
+  'article-lang': ({ lang }) => { articleLang = lang; rerender(); },
+  'eyecatch-delete': async ({ id }) => {
+    const h = hotelById(id);
+    if (!await ask('アイキャッチを外しますか？ 画像も削除されます。', '外す')) return;
+    await dropImage(h.eyecatch);
+    h.eyecatch = null;
+    save();
+    rerender();
+  },
+  'fig-delete': async ({ id, n }) => {
+    const h = hotelById(id);
+    if (!await ask(`Fig.${Number(n) + 1} を削除しますか？`, '削除')) return;
+    const [img] = h.figures.splice(Number(n), 1);
+    await dropImage(img);
+    save();
+    rerender();
+  },
+  'fig-move': ({ id, n, dir }) => {
+    const h = hotelById(id);
+    const a = Number(n), b = a + Number(dir);
+    if (b < 0 || b >= h.figures.length) return;
+    [h.figures[a], h.figures[b]] = [h.figures[b], h.figures[a]];
+    save();
+    rerender();
   },
   'drawing-csv': () => download(`sumibiki-drawings-${ymd(today())}.csv`, csv(drawingRows()), 'text/csv'),
   'drawing-copy': () => copyText(drawingRows().map(r => r.join('\t')).join('\n')),
@@ -1396,6 +1744,18 @@ document.addEventListener('change', e => {
     rerender();
     return;
   }
+  if (el.dataset.img && el.files.length) {
+    const h = hotelById(currentRoute().arg);
+    if (h) addImages(h, el.dataset.img, el.files);
+    el.value = '';
+    return;
+  }
+  if (el.id === 'archive-issue' || el.id === 'archive-published') {
+    archiveFilter.issue = $('#archive-issue').value;
+    archiveFilter.published = $('#archive-published').checked;
+    $('#archive-results').innerHTML = archiveResults();
+    return;
+  }
   if (el.id === 'import-file' && el.files[0]) {
     const reader = new FileReader();
     reader.onload = async () => {
@@ -1407,6 +1767,7 @@ document.addEventListener('change', e => {
         save();
         rerender();
         toast('読み込みました');
+        if (cloud.db) liftDataImages();
       } catch {
         toast('JSONを読み込めませんでした');
       }
@@ -1416,6 +1777,11 @@ document.addEventListener('change', e => {
 });
 
 document.addEventListener('input', e => {
+  if (e.target.id === 'archive-q') {
+    archiveFilter.q = e.target.value;
+    $('#archive-results').innerHTML = archiveResults();
+    return;
+  }
   if (e.target.id !== 'hotel-q') return;
   hotelFilter.q = e.target.value;
   // 入力欄のフォーカスを保つため、結果部分だけ描き直す
@@ -1423,5 +1789,22 @@ document.addEventListener('input', e => {
   if (results) results.innerHTML = hotelList(filteredHotels());
 });
 
+// 画像のドラッグ＆ドロップ
+document.addEventListener('dragover', e => {
+  const zone = e.target.closest?.('[data-drop]');
+  if (!zone) return;
+  e.preventDefault();
+  zone.classList.add('over');
+});
+document.addEventListener('dragleave', e => e.target.closest?.('[data-drop]')?.classList.remove('over'));
+document.addEventListener('drop', e => {
+  const zone = e.target.closest?.('[data-drop]');
+  if (!zone) return;
+  e.preventDefault();
+  zone.classList.remove('over');
+  const h = hotelById(currentRoute().arg);
+  if (h && e.dataTransfer.files.length) addImages(h, zone.dataset.drop, e.dataTransfer.files);
+});
+
 render();
-connectCloud();
+connectCloud().then(() => { if (cloud.db) liftDataImages(); });

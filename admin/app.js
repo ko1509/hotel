@@ -372,6 +372,7 @@ async function connectCloud() {
       saveLocal();
     }
     setSync('saved');
+    await loadSiteMeta();
     rerender();
     flushCloud(); // 初回はこのブラウザのデータを送る。2回目以降は補った項目だけ
   } catch (e) {
@@ -379,6 +380,82 @@ async function connectCloud() {
     cloud.db = null;
     setSync('local');
   }
+}
+
+// ---------- サイトから取り込んだ記事（毎日の取り込みが書く。アプリからは読むだけ） ----------
+// app/site に取得の記録、siteposts/<id> に一覧用、sitebodies/<id> に本文を置く。
+
+const site = { meta: null, posts: [], loaded: false, loading: null, bodies: new Map() };
+
+async function loadSiteMeta() {
+  if (!cloud.db) return;
+  try {
+    const m = await cloud.db.doc('app/site').get();
+    site.meta = m.exists ? m.data() : null;
+  } catch (e) { console.warn('site meta failed', e); }
+}
+
+function loadSitePosts() {
+  if (!cloud.db || site.loaded) return Promise.resolve();
+  site.loading ||= cloud.db.collection('siteposts').limit(1000).get().then(snap => {
+    site.posts = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+    site.loaded = true;
+    const { name } = currentRoute();
+    if (['archive', 'site', 'article', 'hotel', 'dashboard'].includes(name)) rerender();
+  }).catch(e => { console.warn('site posts failed', e); site.loading = null; });
+  return site.loading;
+}
+
+async function loadSiteBody(id) {
+  if (site.bodies.has(id) || !cloud.db) return;
+  site.bodies.set(id, null);
+  try {
+    const d = await cloud.db.doc(`sitebodies/${id}`).get();
+    site.bodies.set(id, d.exists ? d.data() : { missing: true });
+  } catch { site.bodies.set(id, { missing: true }); }
+  if (currentRoute().name === 'site' && currentRoute().arg === id) rerender();
+}
+
+function normUrl(u) { return String(u || '').trim().replace(/^https?:\/\//i, '').replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase(); }
+function sitePostsFor(h) {
+  const urls = [normUrl(h.urlJa), normUrl(h.urlEn)].filter(Boolean);
+  return urls.length ? site.posts.filter(p => urls.includes(normUrl(p.link))) : [];
+}
+function hotelForPost(p) {
+  const l = normUrl(p.link);
+  return l ? state.hotels.find(h => normUrl(h.urlJa) === l || normUrl(h.urlEn) === l) : null;
+}
+function sitePostById(id) { return site.posts.find(p => p.id === id); }
+
+// サイトの本文HTMLを、許可した要素と属性だけ残して表示する
+const ALLOWED_TAGS = new Set(['P', 'BR', 'H2', 'H3', 'H4', 'H5', 'UL', 'OL', 'LI', 'STRONG', 'B', 'EM', 'I', 'A', 'BLOCKQUOTE', 'FIGURE', 'FIGCAPTION', 'IMG', 'TABLE', 'THEAD', 'TBODY', 'TR', 'TH', 'TD', 'HR', 'CITE', 'SMALL', 'SUP', 'SUB', 'DL', 'DT', 'DD']);
+const DROP_TAGS = new Set(['SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'FORM', 'INPUT', 'BUTTON', 'TEXTAREA', 'SELECT', 'NOSCRIPT', 'SVG', 'VIDEO', 'AUDIO', 'TEMPLATE', 'LINK', 'META']);
+function sanitizeHtml(html) {
+  const doc = new DOMParser().parseFromString(`<div>${html || ''}</div>`, 'text/html');
+  const walk = node => {
+    for (const el of [...node.children]) {
+      if (DROP_TAGS.has(el.tagName)) { el.remove(); continue; }
+      walk(el);
+      if (!ALLOWED_TAGS.has(el.tagName)) { el.replaceWith(...el.childNodes); continue; }
+      const href = el.getAttribute('href');
+      const src = el.getAttribute('src');
+      const alt = el.getAttribute('alt');
+      for (const a of [...el.attributes]) el.removeAttribute(a.name);
+      if (el.tagName === 'A' && /^https?:\/\//i.test(href || '')) {
+        el.setAttribute('href', href);
+        el.setAttribute('target', '_blank');
+        el.setAttribute('rel', 'noopener');
+      }
+      if (el.tagName === 'IMG') {
+        if (!/^data:image\/(png|jpe?g|gif|webp|svg\+xml);base64,/i.test(src || '')) { el.remove(); continue; }
+        el.setAttribute('src', src);
+        el.setAttribute('alt', alt || '');
+        el.setAttribute('loading', 'lazy');
+      }
+    }
+  };
+  walk(doc.body.firstElementChild);
+  return doc.body.firstElementChild.innerHTML;
 }
 
 function saveLocal() {
@@ -568,7 +645,7 @@ function go(path) {
 
 function renderNav() {
   const { name } = currentRoute();
-  const active = { hotel: 'hotels', issue: 'issues', article: 'archive' }[name] || name;
+  const active = { hotel: 'hotels', issue: 'issues', article: 'archive', site: 'archive' }[name] || name;
   const openDecisions = state.decisions.filter(d => !d.done).length;
   $('#nav').innerHTML = ROUTES.map(([k, label, short, ico]) => {
     const count = k === 'decisions' && openDecisions ? `<span class="count">${openDecisions}</span>` : '';
@@ -582,7 +659,7 @@ function render() {
     dashboard: viewDashboard, issues: viewIssues, issue: () => viewIssue(arg), hotels: viewHotels,
     hotel: () => viewHotel(arg), drawings: viewDrawings, affiliate: viewAffiliate, sns: viewSns,
     glossary: viewGlossary, routine: viewRoutine, decisions: viewDecisions, settings: viewSettings,
-    archive: viewArchive, article: () => viewArticle(arg),
+    archive: viewArchive, article: () => viewArticle(arg), site: () => viewSite(arg),
   };
   $('#view').innerHTML = (views[name] || viewDashboard)();
   renderNav();
@@ -597,6 +674,7 @@ function rerender() {
 // ---------- 画面：ダッシュボード ----------
 
 function viewDashboard() {
+  loadSitePosts();
   const st = state.settings;
   const ni = nextIssue();
   const t = today();
@@ -644,6 +722,14 @@ function viewDashboard() {
     const noDrawing = hs.filter(h => h.drawing.status === 'none').length;
     if (ps && ps <= t && noDrawing) alerts.push(`${esc(issueLabel(ni))}で線図が未手配のホテルが${noDrawing}件あります。<a href="#/drawings">線図へ</a>`);
     if (!ni.coverNote) alerts.push(`${esc(issueLabel(ni))}の表紙（線図）が未設定です。`);
+  }
+  if (cloud.db && site.meta) {
+    const age = (Date.now() - new Date(site.meta.syncedAt)) / 864e5;
+    if (age > 2) alerts.push(`サイトからの記事の取り込みが${Math.floor(age)}日止まっています。スケジュールされたタスクの実行結果を確認してください。`);
+  }
+  if (site.loaded) {
+    const lag = state.hotels.filter(h => h.stage < STAGE_PUBLISHED && sitePostsFor(h).length);
+    if (lag.length) alerts.push(`サイトで公開中なのに、段階が「公開済」になっていないホテルが${lag.length}件あります。<a href="#/archive">アーカイブへ</a>`);
   }
   const warned = state.hotels.filter(h => hotelWarnings(h).length);
   if (warned.length) alerts.push(`確認が必要なホテル記事が${warned.length}件あります。<a href="#/hotels">ホテル記事へ</a>`);
@@ -808,12 +894,13 @@ function hf(h, path, label, type = 'text', opts = {}) {
   } else if (type === 'checkbox') {
     return `<div class="${cls}"><label style="display:flex;gap:8px;align-items:center;color:var(--text);font-size:.9rem"><input type="checkbox" data-h="${path}" ${v ? 'checked' : ''}>${label}</label>${hint}</div>`;
   } else {
-    input = `<input id="${id}" type="${type}" data-h="${path}" value="${esc(v)}" placeholder="${esc(opts.placeholder || '')}">`;
+    input = `<input id="${id}" type="${type}" data-h="${path}" value="${esc(v)}" placeholder="${esc(opts.placeholder || '')}"${opts.list ? ` list="${opts.list}"` : ''}>`;
   }
   return `<div class="${cls}"><label for="${id}">${label}</label>${input}${hint}</div>`;
 }
 
 function viewHotel(id) {
+  loadSitePosts();
   const h = hotelById(id);
   if (!h) return `<p>ホテルが見つかりません。</p><a href="#/hotels">ホテル記事の一覧へ</a>`;
   const w = hotelWarnings(h);
@@ -867,8 +954,9 @@ function viewHotel(id) {
   <div class="fields">
     ${hf(h, 'titleJa', '記事タイトル（日本語）', 'text', { wide: true, hint: '「ホテル名＋建築家名」「ホテル名＋建築」など探されやすい語を入れる' })}
     ${hf(h, 'titleEn', '記事タイトル（英語）', 'text', { wide: true })}
-    ${hf(h, 'urlJa', '記事URL（日本語）', 'url')}
-    ${hf(h, 'urlEn', '記事URL（英語）', 'url')}
+    ${hf(h, 'urlJa', '記事URL（日本語）', 'url', { list: 'site-links', hint: 'サイトの記事URLを入れると、取り込んだ記事と結び付きます' })}
+    ${hf(h, 'urlEn', '記事URL（英語）', 'url', { list: 'site-links' })}
+    <datalist id="site-links">${site.posts.map(p => `<option value="${esc(p.link)}">${esc(p.title)}</option>`).join('')}</datalist>
     ${hf(h, 'en.status', '英語版', 'select', { options: [['none', '未着手'], ['requested', '翻訳依頼済'], ['reviewing', '固有名詞・用語を確認中'], ['ready', '公開できる'], ['published', '公開済'], ['later', '後日公開（日本語のみ先行）']] })}
     ${hf(h, 'en.note', '英語版のメモ（公開予定など）')}
     ${hf(h, 'bodyJa', '本文（確定稿・日本語）', 'textarea', { wide: true, rows: 10, hint: '「## 見出し」「- 箇条書き」「**強調**」「[文字](URL)」が使えます。アーカイブでサイトに近い形で表示します。' })}
@@ -1074,15 +1162,30 @@ function linkify(t) {
 
 // ---------- 画面：アーカイブ ----------
 
-let archiveFilter = { q: '', issue: '', published: false };
+let archiveFilter = { q: '', issue: '', show: 'all' };
 
 function archiveHotels() {
   const f = archiveFilter;
   const q = f.q.trim().toLowerCase();
   return state.hotels.filter(h => {
-    if (f.published && h.stage !== STAGE_PUBLISHED) return false;
+    const live = sitePostsFor(h).length > 0;
+    if (f.show === 'site' && !live) return false;
+    if (f.show === 'draft' && live) return false;
     if (f.issue && h.issueId !== f.issue) return false;
-    return !q || [h.nameJa, h.nameEn, h.titleJa, h.titleEn, h.architect, h.architectEn, h.region, h.tags].join(' ').toLowerCase().includes(q);
+    return !q || [h.nameJa, h.nameEn, h.titleJa, h.titleEn, h.architect, h.architectEn, h.region, h.tags, ...sitePostsFor(h).map(p => p.title)].join(' ').toLowerCase().includes(q);
+  });
+}
+
+// ホテル記事と結び付いていないサイトの記事。英語版は日本語版があればそちらにまとめる
+function archiveSiteOnly() {
+  const f = archiveFilter;
+  if (f.show === 'draft' || f.issue) return [];
+  const q = f.q.trim().toLowerCase();
+  const shown = new Set(site.posts.map(p => p.id));
+  return site.posts.filter(p => {
+    if (hotelForPost(p)) return false;
+    if (p.lang === 'en' && p.translations?.ja && shown.has(p.translations.ja)) return false;
+    return !q || [p.title, p.excerpt, ...(p.categories || []), ...(p.tags || [])].join(' ').toLowerCase().includes(q);
   });
 }
 
@@ -1090,36 +1193,66 @@ function issueNo(issue) { return issue ? `No.${pad(issueNumber(issue))}` : 'No.�
 
 function archiveCard(h) {
   const issue = issueById(h.issueId);
+  const posts = sitePostsFor(h);
+  const thumb = h.eyecatch ? imgSrc(h.eyecatch) : posts.find(p => p.thumb)?.thumb;
+  const status = posts.length ? '<span class="tag live">サイト公開中</span>' : h.stage === STAGE_PUBLISHED ? '' : `<span class="tag">下書き・${STAGES[h.stage]}</span>`;
   return `<a class="arch-card" href="#/article/${h.id}">
-    <div class="arch-thumb">${h.eyecatch ? `<img src="${esc(imgSrc(h.eyecatch))}" alt="${esc(h.eyecatch.alt)}" loading="lazy">` : `<span class="ph">${icon('hotel')}</span>`}</div>
+    <div class="arch-thumb">${thumb ? `<img src="${esc(thumb)}" alt="${esc(h.eyecatch?.alt || '')}" loading="lazy">` : `<span class="ph">${icon('hotel')}</span>`}</div>
     <div class="arch-body">
       <div class="eyebrow">${issueNo(issue)}${h.region ? ` · ${esc(h.region)}` : ''}</div>
       <h3>${esc(h.titleJa || h.nameJa || '(無題)')}</h3>
       <div class="meta">${esc(h.architect || '')}</div>
-      ${h.stage === STAGE_PUBLISHED ? '' : `<span class="tag">下書き・${STAGES[h.stage]}</span>`}
+      ${status}
+    </div>
+  </a>`;
+}
+
+function siteCard(p) {
+  return `<a class="arch-card" href="#/site/${p.id}">
+    <div class="arch-thumb">${p.thumb ? `<img src="${esc(p.thumb)}" alt="${esc(p.thumbAlt)}" loading="lazy">` : `<span class="ph">${icon('doc')}</span>`}</div>
+    <div class="arch-body">
+      <div class="eyebrow">${esc((p.categories || []).join(' · ') || 'SUMIBIKI')}${p.date ? ` · ${fmtDate(p.date.slice(0, 10))}` : ''}</div>
+      <h3>${esc(p.title || '(無題)')}</h3>
+      <div class="meta">${esc(p.excerpt || '').slice(0, 60)}</div>
+      <span class="tag live">サイト${p.lang === 'en' ? '・English' : ''}</span>
     </div>
   </a>`;
 }
 
 function archiveResults() {
   const list = archiveHotels();
-  if (!list.length) return `<div class="empty">${icon('archive')}<div>表示できる記事がありません。</div></div>`;
+  const siteOnly = archiveSiteOnly();
+  if (!list.length && !siteOnly.length) return `<div class="empty">${icon('archive')}<div>表示できる記事がありません。</div></div>`;
   const groups = [...sortedIssues()].reverse().map(i => [i, list.filter(h => h.issueId === i.id)]);
-  groups.push([null, list.filter(h => !issueById(h.issueId))]);
-  return groups.filter(([, hs]) => hs.length).map(([i, hs]) => `<section class="arch-group">
+  const unassigned = list.filter(h => !issueById(h.issueId));
+  const group = (i, hs) => `<section class="arch-group">
     <header><span class="num">${issueNo(i)}</span><h2>${i ? esc(issueLabel(i)) : '号が未定'}</h2>${i?.theme ? `<span class="theme">${esc(i.theme)}</span>` : ''}</header>
     <div class="arch-grid">${hs.map(archiveCard).join('')}</div>
-  </section>`).join('');
+  </section>`;
+  return groups.filter(([, hs]) => hs.length).map(([i, hs]) => group(i, hs)).join('')
+    + (siteOnly.length ? `<section class="arch-group">
+      <header><span class="num">WEB</span><h2>サイトの記事</h2><span class="theme">ホテル記事と結び付いていない記事（${siteOnly.length}）</span></header>
+      <div class="arch-grid">${siteOnly.map(siteCard).join('')}</div>
+    </section>` : '')
+    + (unassigned.length ? group(null, unassigned) : '');
+}
+
+function siteStatusLine() {
+  if (!cloud.db) return 'サイトからの取り込みは、クラウドに保存しているとき（アーティファクト版）に表示されます。';
+  if (!site.meta) return 'サイトからの取り込みはまだ一度も実行されていません。';
+  return `サイトから毎日取り込み・最終取得 ${new Date(site.meta.syncedAt).toLocaleString('ja-JP', { dateStyle: 'medium', timeStyle: 'short' })}・${site.meta.count}件${site.loaded ? '' : '（読み込み中…）'}`;
 }
 
 function viewArchive() {
+  loadSitePosts();
   const f = archiveFilter;
   return `<h1>アーカイブ</h1>
   <p class="sub">号ごとに、サイトに近い形で記事を見返せます。カードを開くと記事のページになります。</p>
+  <p class="site-line">${icon('external')}${esc(siteStatusLine())}</p>
   <div class="toolbar">
     <input type="search" id="archive-q" placeholder="ホテル名・建築家・地域で検索" value="${esc(f.q)}">
     <select id="archive-issue"><option value="">すべての号</option>${sortedIssues().map(i => `<option value="${i.id}" ${f.issue === i.id ? 'selected' : ''}>${esc(issueLabel(i))}</option>`).join('')}</select>
-    <label class="switch"><input type="checkbox" id="archive-published" ${f.published ? 'checked' : ''}>公開済みのみ</label>
+    <div class="seg" role="group" aria-label="表示">${[['all', 'すべて'], ['site', 'サイト公開中'], ['draft', '下書き']].map(([k, l]) => `<button data-act="archive-show" data-show="${k}" class="${f.show === k ? 'on' : ''}">${l}</button>`).join('')}</div>
   </div>
   <div id="archive-results">${archiveResults()}</div>`;
 }
@@ -1129,6 +1262,7 @@ function viewArchive() {
 let articleLang = 'ja';
 
 function viewArticle(id) {
+  loadSitePosts();
   const h = hotelById(id);
   if (!h) return `<p>記事が見つかりません。</p><a href="#/archive">アーカイブへ</a>`;
   const en = articleLang === 'en';
@@ -1166,6 +1300,7 @@ function viewArticle(id) {
     <div class="seg" role="group" aria-label="言語">
       <button data-act="article-lang" data-lang="ja" class="${en ? '' : 'on'}">日本語</button><button data-act="article-lang" data-lang="en" class="${en ? 'on' : ''}">English</button>
     </div>
+    ${sitePostsFor(h).map(p => `<a class="btn small" href="#/site/${p.id}">${icon('external')}サイト版${p.lang === 'en' ? '（EN）' : ''}</a>`).join('')}
     <a class="btn small" href="#/hotel/${h.id}">${icon('edit')}編集</a>
   </div>
   <article class="paper" lang="${en ? 'en' : 'ja'}">
@@ -1183,6 +1318,42 @@ function viewArticle(id) {
       ${mapUrl ? `<a class="btn" href="${mapUrl}" target="_blank" rel="noopener">${icon('pin')}${T.map}</a>` : ''}
       ${h.affiliate.url ? `<a class="btn primary" href="${esc(h.affiliate.url)}" target="_blank" rel="noopener sponsored">${icon('external')}${T.book}</a>` : ''}</div></section>` : ''}
     ${lines(h.sources).length ? `<section>${head(T.src)}<ol class="sources">${lines(h.sources).map(x => `<li>${linkify(x)}</li>`).join('')}</ol></section>` : ''}
+  </article>`;
+}
+
+// ---------- 画面：サイトの記事 ----------
+
+function viewSite(id) {
+  loadSitePosts();
+  const p = sitePostById(id);
+  if (!p) return site.loaded || !cloud.db
+    ? `<p>記事が見つかりません。</p><a href="#/archive">アーカイブへ</a>`
+    : `<div class="empty">${icon('archive')}<div>読み込み中…</div></div>`;
+  loadSiteBody(id);
+  const body = site.bodies.get(id);
+  const h = hotelForPost(p);
+  const other = p.translations ? Object.entries(p.translations).filter(([l, pid]) => l !== p.lang && sitePostById(pid)) : [];
+  const en = p.lang === 'en';
+  let content;
+  if (!body) content = `<p class="meta">本文を読み込み中…</p>`;
+  else if (body.missing) content = `<p class="meta">本文を読み込めませんでした。次の取り込みで入ります。</p>`;
+  else content = `<div class="prose wp">${sanitizeHtml(body.content)}</div>${body.imagesDropped ? `<p class="meta">${icon('image')}本文の画像${body.imagesDropped}点は容量の都合で省略しています。サイトで確認してください。</p>` : ''}`;
+  const featured = body?.featured || p.thumb;
+  return `<div class="toolbar crumbs">
+    <a class="back" href="#/archive">${icon('back')}アーカイブ</a>
+    <span class="spacer"></span>
+    ${other.map(([l, pid]) => `<a class="btn small" href="#/site/${pid}">${l === 'en' ? 'English' : '日本語'}</a>`).join('')}
+    ${h ? `<a class="btn small" href="#/hotel/${h.id}">${icon('edit')}ホテル記事</a>` : ''}
+    <a class="btn small" href="${esc(p.link)}" target="_blank" rel="noopener">${icon('external')}サイトで開く</a>
+  </div>
+  <article class="paper" lang="${en ? 'en' : 'ja'}">
+    <div class="eyebrow">${h ? `${issueNo(issueById(h.issueId))} · ` : ''}${esc((p.categories || []).join(' · ') || 'SUMIBIKI')}</div>
+    <h1 class="art-title">${esc(p.title || '(無題)')}</h1>
+    <p class="art-meta">${p.date ? `${en ? 'Published' : '公開'} ${fmtDate(p.date.slice(0, 10))}` : ''}${p.modified && p.modified.slice(0, 10) !== (p.date || '').slice(0, 10) ? ` · ${en ? 'Updated' : '更新'} ${fmtDate(p.modified.slice(0, 10))}` : ''}</p>
+    ${featured ? `<figure class="eyecatch"><img src="${esc(featured)}" alt="${esc(body?.featuredAlt || p.thumbAlt || '')}">${body?.featuredCaption ? `<figcaption>${esc(body.featuredCaption)}</figcaption>` : ''}</figure>` : ''}
+    ${content}
+    ${(p.tags || []).length ? `<p class="art-tags">${p.tags.map(t => `<span class="tag">${esc(t)}</span>`).join('')}</p>` : ''}
+    <p class="meta site-src">${icon('external')}<a href="${esc(p.link)}" target="_blank" rel="noopener">${esc(p.link)}</a></p>
   </article>`;
 }
 
@@ -1601,6 +1772,7 @@ const actions = {
     copyText(lang === 'en' ? promptEn(h) : promptJa(h));
   },
   'article-lang': ({ lang }) => { articleLang = lang; rerender(); },
+  'archive-show': ({ show }) => { archiveFilter.show = show; rerender(); },
   'eyecatch-delete': async ({ id }) => {
     const h = hotelById(id);
     if (!await ask('アイキャッチを外しますか？ 画像も削除されます。', '外す')) return;
@@ -1709,7 +1881,7 @@ document.addEventListener('change', e => {
     setPath(h, el.dataset.h, val);
     h.updatedAt = new Date().toISOString();
     save();
-    if (el.type === 'checkbox' || el.tagName === 'SELECT' || ['nameJa', 'architect', 'sources', 'unverified', 'location'].includes(el.dataset.h)) rerender();
+    if (el.type === 'checkbox' || el.tagName === 'SELECT' || ['nameJa', 'architect', 'sources', 'unverified', 'location', 'urlJa', 'urlEn'].includes(el.dataset.h)) rerender();
     return;
   }
   if (el.dataset.s) {
@@ -1750,9 +1922,8 @@ document.addEventListener('change', e => {
     el.value = '';
     return;
   }
-  if (el.id === 'archive-issue' || el.id === 'archive-published') {
+  if (el.id === 'archive-issue') {
     archiveFilter.issue = $('#archive-issue').value;
-    archiveFilter.published = $('#archive-published').checked;
     $('#archive-results').innerHTML = archiveResults();
     return;
   }

@@ -39,6 +39,6 @@ claude.ai のアーティファクトとして公開しています：https://cl
 ```
 admin/
   index.html   画面の枠
-  style.css    白基調、アクセントは緑青と錆の2色
+  style.css    白基調、色はサイトと同じ錆 #8c4a2a と明るい錆 #d9a27f の2色
   app.js       画面とデータ処理（外部ライブラリなし）
 ```

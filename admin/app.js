@@ -75,7 +75,7 @@ const ROUTINES = {
 
 // 11章 未決定事項（初期値）
 const DEFAULT_DECISIONS = [
-  ['緑青と錆の具体的なカラーコード、見出し用フォント', '4章'],
+  ['見出し用フォント（メインカラーは錆 #8c4a2a・明るい錆 #d9a27f に決定）', '4章'],
   ['多言語プラグインの選定と、言語ごとのURL構造', '3章・7章'],
   ['アフィリエイト提携先の比較・決定と、各社の規約確認', '8章'],
   ['創刊号のホテル5本と公開日の確定（年内〜来春）', '2章'],
@@ -212,8 +212,8 @@ function defaultState() {
       goalDeadline: '',
       articlesPerIssue: 5,
       prepMonths: 2,
-      colorRokusho: '',
-      colorSabi: '',
+      colorMain: '#8c4a2a',
+      colorLight: '#d9a27f',
       headingFont: '',
       bodyFont: '',
       writingStyle: 'です・ます調。建築に関心のある旅行者に向けた、落ち着いた雑誌の文体',
@@ -1148,10 +1148,10 @@ function viewSettings() {
   </div>
 
   <h2>デザイン</h2>
-  <p class="sub">緑青 ${swatch(st.colorRokusho)}・錆 ${swatch(st.colorSabi)}</p>
+  <p class="sub">錆 ${swatch(st.colorMain)}・明るい錆 ${swatch(st.colorLight)}</p>
   <div class="fields">
-    ${sf('colorRokusho', '緑青のカラーコード', 'text', { placeholder: '#3f7f72' })}
-    ${sf('colorSabi', '錆のカラーコード', 'text', { placeholder: '#9a4a2c' })}
+    ${sf('colorMain', '錆（セクション番号・種別ラベル）', 'text', { placeholder: '#8c4a2a' })}
+    ${sf('colorLight', '明るい錆（暗い面での番号・ホバー時）', 'text', { placeholder: '#d9a27f' })}
     ${sf('headingFont', '見出し用フォント')}
     ${sf('bodyFont', '本文用フォント')}
   </div>

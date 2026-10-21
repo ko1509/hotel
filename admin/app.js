@@ -139,6 +139,19 @@ function toast(msg) {
   toast.timer = setTimeout(() => t.classList.remove('show'), 1800);
 }
 
+// アーティファクト内ではブラウザ標準の確認ダイアログが出ないため、ページ内のダイアログで確認する
+function ask(message, okLabel = 'OK') {
+  return new Promise(resolve => {
+    const d = $('#confirm');
+    $('#confirm-msg').textContent = message;
+    $('#confirm-ok').textContent = okLabel;
+    $('#confirm-ok').onclick = () => { d.close(); resolve(true); };
+    $('#confirm-cancel').onclick = () => { d.close(); resolve(false); };
+    d.oncancel = () => resolve(false);
+    d.showModal();
+  });
+}
+
 async function copyText(text) {
   try {
     await navigator.clipboard.writeText(text);
@@ -153,7 +166,17 @@ async function copyText(text) {
   }
 }
 
-function download(filename, text, type = 'application/json') {
+// アーティファクトとして開いたときは downloads 機能で保存する。ローカルではリンクから保存する。
+async function download(filename, text, type = 'application/json') {
+  const dl = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
+  if (dl) {
+    try {
+      await dl.save({ filename, data: text });
+    } catch (e) {
+      if (e?.code !== 'declined') toast('ファイルを保存できませんでした。コピーを使ってください');
+    }
+    return;
+  }
   const blob = new Blob([text], { type });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
@@ -244,11 +267,92 @@ function normalizeHotel(h) {
 
 let state = load();
 
-function save() {
+// アーティファクトでは db 機能（クラウド）に保存する。
+// app/main に号・提携先・設定など、hotels/<id> にホテルを1件ずつ置く。
+// db が使えないとき（ローカルで開いたときなど）はブラウザの保存領域だけを使う。
+const cloud = { db: null, status: 'local', written: new Map(), queue: Promise.resolve(), timer: null };
+
+function setSync(status) {
+  cloud.status = status;
+  const el = $('#sync');
+  if (!el) return;
+  el.textContent = { local: 'このブラウザに保存', loading: '読み込み中…', saving: '保存中…', saved: 'クラウドに保存済み', error: '保存できませんでした' }[status];
+  el.className = `sync ${status}`;
+}
+
+function cloudParts() {
+  const { hotels, ...main } = state;
+  const parts = new Map([['app/main', main]]);
+  for (const h of hotels) parts.set(`hotels/${h.id}`, h);
+  return parts;
+}
+
+// 前回書いた内容と違う文書だけを、1件ずつ順に書く
+function flushCloud() {
+  cloud.queue = cloud.queue.then(async () => {
+    const parts = cloudParts();
+    const ops = [];
+    for (const [path, body] of parts) {
+      const json = JSON.stringify(body);
+      if (cloud.written.get(path) !== json) ops.push([path, json]);
+    }
+    for (const path of cloud.written.keys()) if (!parts.has(path)) ops.push([path, null]);
+    if (!ops.length) return;
+    setSync('saving');
+    for (const [path, json] of ops) {
+      try {
+        if (json) await cloud.db.doc(path).set(JSON.parse(json));
+        else await cloud.db.doc(path).delete();
+        if (json) cloud.written.set(path, json); else cloud.written.delete(path);
+      } catch (e) {
+        console.warn('cloud save failed', path, e);
+        setSync('error');
+        toast(e?.code === 'quota_exceeded' ? '保存容量の上限です。不要なデータを削除してください' : 'クラウドに保存できませんでした');
+        return;
+      }
+    }
+    setSync('saved');
+  });
+}
+
+async function connectCloud() {
+  if (!window.claude?.use) return;
+  setSync('loading');
+  const db = await window.claude.use('db').catch(() => null);
+  if (!db) { setSync('local'); return; }
+  try {
+    const [main, hs] = await Promise.all([db.doc('app/main').get(), db.collection('hotels').limit(1000).get()]);
+    cloud.db = db;
+    if (main.exists) {
+      cloud.written.set('app/main', JSON.stringify(main.data()));
+      for (const d of hs.docs) cloud.written.set(`hotels/${d.id}`, JSON.stringify(d.data()));
+      // 届いたデータは凍結されているので複製してから使う
+      state = migrate(structuredClone({ ...main.data(), hotels: hs.docs.map(d => d.data()) }));
+      saveLocal();
+    }
+    setSync('saved');
+    rerender();
+    flushCloud(); // 初回はこのブラウザのデータを送る。2回目以降は補った項目だけ
+  } catch (e) {
+    console.warn('cloud load failed', e);
+    cloud.db = null;
+    setSync('local');
+  }
+}
+
+function saveLocal() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  } catch (e) {
-    toast('保存できませんでした（ブラウザの保存領域を確認してください）');
+  } catch {
+    if (!cloud.db) toast('保存できませんでした（ブラウザの保存領域を確認してください）');
+  }
+}
+
+function save() {
+  saveLocal();
+  if (cloud.db) {
+    clearTimeout(cloud.timer);
+    cloud.timer = setTimeout(flushCloud, 600);
   }
   renderNav();
 }
@@ -405,9 +509,18 @@ const ROUTES = [
   ['settings', '設定・データ'],
 ];
 
+// 画面の切り替えはページ内で持つ（アーティファクトでは #/path がアドレスに届かないため）
+let routePath = location.hash.replace(/^#\/?/, '') || 'dashboard';
+
 function currentRoute() {
-  const parts = location.hash.replace(/^#\/?/, '').split('/');
+  const parts = routePath.split('/');
   return { name: parts[0] || 'dashboard', arg: decodeURIComponent(parts[1] || '') };
+}
+
+function go(path) {
+  routePath = path.replace(/^#\/?/, '') || 'dashboard';
+  render();
+  window.scrollTo(0, 0);
 }
 
 function renderNav() {
@@ -492,7 +605,7 @@ function viewDashboard() {
   if (warned.length) alerts.push(`確認が必要なホテル記事が${warned.length}件あります。<a href="#/hotels">ホテル記事へ</a>`);
   if (m.done < m.total && t.getDate() >= 20) alerts.push(`今月の定期作業が残っています（${m.done}/${m.total}）。<a href="#/routine">定期作業へ</a>`);
   const lastExport = st.lastExportAt ? new Date(st.lastExportAt) : null;
-  if (!lastExport || daysBetween(lastExport, new Date()) > 30) alerts.push(`このアプリのデータを30日以上書き出していません。<a href="#/settings">設定・データへ</a>`);
+  if (!cloud.db && (!lastExport || daysBetween(lastExport, new Date()) > 30)) alerts.push(`このアプリのデータを30日以上書き出していません。<a href="#/settings">設定・データへ</a>`);
 
   const openDecisions = state.decisions.filter(d => !d.done);
 
@@ -758,7 +871,7 @@ function viewDrawings() {
   const counts = Object.keys(DRAWING_STATUS).map(k => `<span class="tag ${k === 'delivered' ? 'ok' : k === 'none' ? 'warn' : ''}">${DRAWING_STATUS[k]} ${state.hotels.filter(h => h.drawing.status === k).length}</span>`).join('');
   return `<h1>線図</h1>
   <p class="sub">アイキャッチはホテル外観の線図。発注前に権利の帰属と利用範囲を決め、書面（メール可）で合意します。</p>
-  <div class="toolbar">${counts}<span class="spacer"></span><button class="btn" data-act="drawing-csv">発注用リストをCSVで書き出す</button></div>
+  <div class="toolbar">${counts}<span class="spacer"></span><button class="btn" data-act="drawing-csv">発注用リストをCSVで書き出す</button><button class="btn" data-act="drawing-copy">表をコピー</button></div>
   ${rows.length ? `<div class="table-wrap"><table>
     <thead><tr><th>ホテル</th><th>号</th><th>状態</th><th>イラストレーター</th><th>権利</th><th>合意</th><th>元資料</th><th>納期</th></tr></thead>
     <tbody>${rows.map(h => {
@@ -779,12 +892,12 @@ function viewDrawings() {
   <p class="meta" style="margin-bottom:0">ホテルや建築家が公開している画像でも、無断で転載・トレースしない。掲載許可・施設名や建築家名の使用は施設ごとに確認する。</p></div>`;
 }
 
-function drawingCsv() {
+function drawingRows() {
   const rows = [['号', 'ホテル名', 'Hotel name', '建築家', '所在地', '状態', 'イラストレーター', '権利の帰属', '利用範囲', '元資料', '元資料の許可', '納期', '報酬・条件', 'クレジット']];
   for (const h of state.hotels) {
     rows.push([issueLabel(issueById(h.issueId)), h.nameJa, h.nameEn, h.architect, h.location, DRAWING_STATUS[h.drawing.status], h.drawing.illustrator, RIGHTS[h.drawing.rights], h.drawing.scopeNote, h.drawing.sourceMaterial, h.drawing.sourcePermission ? '確認済' : '未確認', h.drawing.due, h.drawing.fee, h.drawing.credit]);
   }
-  download(`sumibiki-drawings-${ymd(today())}.csv`, csv(rows), 'text/csv');
+  return rows;
 }
 
 // ---------- 画面：アフィリエイト ----------
@@ -1054,9 +1167,10 @@ function viewSettings() {
   <div class="fields">${sf('backupNote', 'ConoHa WINGの自動バックアップ・復元手順など', 'textarea', { wide: true, hint: 'パスワードはここに書かず、パスワード管理ツールで保管してください。' })}</div>
 
   <h2>データ</h2>
-  <p class="sub">データはこのブラウザだけに保存されています。定期的にJSONで書き出してください。${st.lastExportAt ? `最終書き出し：${new Date(st.lastExportAt).toLocaleString('ja-JP')}` : 'まだ書き出していません。'}</p>
+  <p class="sub">${cloud.db ? 'データはクラウドに保存され、別の端末から開いても同じデータが見られます。念のため、ときどきJSONで書き出してください。' : 'データはこのブラウザだけに保存されています。定期的にJSONで書き出してください。'}${st.lastExportAt ? `最終書き出し：${new Date(st.lastExportAt).toLocaleString('ja-JP')}` : 'まだ書き出していません。'}</p>
   <div class="toolbar">
     <button class="btn primary" data-act="export">JSONで書き出す</button>
+    <button class="btn" data-act="export-copy">JSONをコピー</button>
     <label class="btn" for="import-file" style="display:inline-block">JSONを読み込む</label>
     <input type="file" id="import-file" accept="application/json,.json" hidden>
     <span class="spacer"></span>
@@ -1099,8 +1213,8 @@ function openForm(title, fields, onSave, onDelete) {
   };
   $('#modal-cancel').onclick = () => modal.close();
   const del = $('#modal-delete');
-  if (del) del.onclick = () => {
-    if (!confirm('削除しますか？')) return;
+  if (del) del.onclick = async () => {
+    if (!await ask('削除しますか？', '削除')) return;
     onDelete();
     modal.close();
     save();
@@ -1117,13 +1231,13 @@ const actions = {
     const i = issueById(id);
     openForm('号を編集', issueForm(i), v => Object.assign(i, v));
   },
-  'issue-delete': ({ id }) => {
+  'issue-delete': async ({ id }) => {
     const i = issueById(id);
-    if (!confirm(`${issueLabel(i)}を削除しますか？ この号のホテルは「未割り当て」に戻ります。`)) return;
+    if (!await ask(`${issueLabel(i)}を削除しますか？ この号のホテルは「未割り当て」に戻ります。`, '削除')) return;
     state.hotels.forEach(h => { if (h.issueId === id) h.issueId = ''; });
     state.issues = state.issues.filter(x => x.id !== id);
     save();
-    location.hash = '#/issues';
+    go('issues');
   },
   'issue-assign': ({ id }) => {
     const h = hotelById($('#assign-select').value);
@@ -1140,20 +1254,20 @@ const actions = {
   ], v => {
     const h = newHotel(v);
     state.hotels.push(h);
-    setTimeout(() => { location.hash = `#/hotel/${h.id}`; });
+    setTimeout(() => go(`hotel/${h.id}`));
   }),
-  'hotel-delete': ({ id }) => {
+  'hotel-delete': async ({ id }) => {
     const h = hotelById(id);
-    if (!confirm(`「${h.nameJa}」を削除しますか？`)) return;
+    if (!await ask(`「${h.nameJa}」を削除しますか？`, '削除')) return;
     state.hotels = state.hotels.filter(x => x.id !== id);
     state.snsPosts.forEach(p => { if (p.hotelId === id) p.hotelId = ''; });
     save();
-    location.hash = '#/hotels';
+    go('hotels');
   },
-  stage: ({ id, stage }) => {
+  stage: async ({ id, stage }) => {
     const h = hotelById(id);
     const n = Number(stage);
-    if (n === STAGE_PUBLISHED && checksDone(h) < PREPUBLISH_CHECKS.length && !confirm('公開前チェックリストが終わっていません。公開済にしますか？')) return;
+    if (n === STAGE_PUBLISHED && checksDone(h) < PREPUBLISH_CHECKS.length && !await ask('公開前チェックリストが終わっていません。公開済にしますか？', '公開済にする')) return;
     h.stage = n;
     h.updatedAt = new Date().toISOString();
     save();
@@ -1163,7 +1277,8 @@ const actions = {
     const h = hotelById(id);
     copyText(lang === 'en' ? promptEn(h) : promptJa(h));
   },
-  'drawing-csv': drawingCsv,
+  'drawing-csv': () => download(`sumibiki-drawings-${ymd(today())}.csv`, csv(drawingRows()), 'text/csv'),
+  'drawing-copy': () => copyText(drawingRows().map(r => r.join('\t')).join('\n')),
   'partner-new': () => openForm('提携先を追加', partnerForm(null), v => { state.partners.push({ id: uid(), ...v }); }),
   'partner-edit': ({ id }) => {
     const p = state.partners.find(x => x.id === id);
@@ -1208,22 +1323,28 @@ const actions = {
     const d = state.decisions.find(x => x.id === id);
     openForm('未決定事項を編集', decisionForm(d), v => Object.assign(d, v), () => { state.decisions = state.decisions.filter(x => x.id !== id); });
   },
+  'export-copy': () => copyText(JSON.stringify(state, null, 2)),
   export: () => {
     state.settings.lastExportAt = new Date().toISOString();
     save();
     download(`sumibiki-admin-${ymd(today())}.json`, JSON.stringify(state, null, 2));
     rerender();
   },
-  reset: () => {
-    if (!confirm('すべてのデータを消去して初期状態に戻します。先にJSONで書き出しましたか？')) return;
+  reset: async () => {
+    if (!await ask('すべてのデータを消去して初期状態に戻します。先にJSONで書き出しましたか？', 'すべて消去')) return;
     state = defaultState();
     save();
-    location.hash = '#/dashboard';
-    rerender();
+    go('dashboard');
   },
 };
 
 document.addEventListener('click', e => {
+  const link = e.target.closest('a[href^="#"]');
+  if (link) {
+    e.preventDefault();
+    go(link.getAttribute('href'));
+    return;
+  }
   const el = e.target.closest('[data-act]');
   if (!el) return;
   e.preventDefault();
@@ -1277,10 +1398,11 @@ document.addEventListener('change', e => {
   }
   if (el.id === 'import-file' && el.files[0]) {
     const reader = new FileReader();
-    reader.onload = () => {
+    reader.onload = async () => {
       try {
         const data = JSON.parse(reader.result);
-        if (!confirm('読み込んだデータで、いまのデータを置き換えます。よろしいですか？')) return;
+        el.value = '';
+        if (!await ask('読み込んだデータで、いまのデータを置き換えます。よろしいですか？', '置き換える')) return;
         state = migrate(data);
         save();
         rerender();
@@ -1301,5 +1423,5 @@ document.addEventListener('input', e => {
   if (results) results.innerHTML = hotelList(filteredHotels());
 });
 
-window.addEventListener('hashchange', () => { render(); window.scrollTo(0, 0); });
 render();
+connectCloud();

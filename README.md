@@ -12,6 +12,13 @@ Webマガジン「SUMIBIKI」（sumibiki.com）を1人で運営するための�
 
 スマホからも使いたい場合は、`admin/` フォルダーをConoHa WINGのサブディレクトリ（例：`sumibiki.com/admin-xxxx/`）にアップロードし、ConoHa WINGの「アクセス制限（Basic認証）」をかけてください。データは各端末のブラウザに保存されるので、端末間でJSONをやり取りします。
 
+## アーティファクト版
+
+claude.ai のアーティファクトとして公開しています：https://claude.ai/artifact/NdPqJiidEhofck2f5fQGCh
+
+- アーティファクト版では、データはクラウド（アーティファクトのデータベース）に保存されます。所有者だけが読み書きでき、どの端末から開いても同じデータが見られます。
+- 公開用の1枚のHTMLは `node scripts/build-artifact.mjs` で `dist/sumibiki-admin.html` に作ります。
+
 ## 画面とマニュアルの対応
 
 | 画面 | 内容 | マニュアル |

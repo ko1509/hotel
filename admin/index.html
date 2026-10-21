@@ -9,6 +9,7 @@
 <body>
   <header class="topbar">
     <a class="brand" href="#/dashboard">SUMIBIKI<span>運営管理</span></a>
+    <span id="sync" class="sync local">このブラウザに保存</span>
   </header>
   <div class="layout">
     <nav class="nav" id="nav"></nav>
@@ -24,6 +25,14 @@
         <button type="submit" class="btn primary" id="modal-save">保存</button>
       </div>
     </form>
+  </dialog>
+
+  <dialog id="confirm" class="confirm">
+    <p id="confirm-msg"></p>
+    <div class="modal-actions">
+      <button type="button" class="btn ghost" id="confirm-cancel">キャンセル</button>
+      <button type="button" class="btn primary" id="confirm-ok">OK</button>
+    </div>
   </dialog>
 
   <div id="toast" class="toast" role="status" aria-live="polite"></div>

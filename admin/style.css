@@ -9,9 +9,23 @@
   --rokusho-soft: #e6f0ed;
   --sabi: #9a4a2c;         /* 錆：注意・未完了 */
   --sabi-soft: #f6ebe6;
+  --on-accent: #ffffff;
   --radius: 6px;
   --font: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", "Yu Gothic", sans-serif;
   --font-head: "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141716; --surface: #1c201f; --line: #2e3432; --text: #e6e8e5; --muted: #9ba19d;
+    --rokusho: #72b5a6; --rokusho-soft: #1f3631; --sabi: #d4866a; --sabi-soft: #3a2721; --on-accent: #0d1412;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141716; --surface: #1c201f; --line: #2e3432; --text: #e6e8e5; --muted: #9ba19d;
+  --rokusho: #72b5a6; --rokusho-soft: #1f3631; --sabi: #d4866a; --sabi-soft: #3a2721; --on-accent: #0d1412;
+  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -32,8 +46,10 @@ h3 { font-size: 1rem; margin: 18px 0 8px; }
 .sub { color: var(--muted); font-size: .85rem; margin: 0 0 18px; }
 
 /* ---- layout ---- */
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 11; background: var(--bg); }
 .topbar {
-  position: sticky; top: 0; z-index: 10;
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 10;
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
   padding: 10px 16px;
@@ -45,9 +61,13 @@ h3 { font-size: 1rem; margin: 18px 0 8px; }
 }
 .brand span { font-family: var(--font); font-size: .75rem; letter-spacing: .05em; color: var(--muted); margin-left: 10px; font-weight: 400; }
 
+.sync { font-size: .72rem; color: var(--muted); white-space: nowrap; }
+.sync.saved::before { content: "●"; color: var(--rokusho); margin-right: 4px; }
+.sync.error { color: var(--sabi); }
+
 .layout { display: block; }
 .nav {
-  position: sticky; top: 45px; z-index: 9;
+  position: sticky; top: calc(45px + env(safe-area-inset-top, 0px)); z-index: 9;
   display: flex; gap: 4px; overflow-x: auto;
   background: var(--bg);
   border-bottom: 1px solid var(--line);
@@ -68,7 +88,7 @@ h3 { font-size: 1rem; margin: 18px 0 8px; }
   .layout { display: grid; grid-template-columns: 200px 1fr; }
   .nav {
     flex-direction: column; overflow: visible;
-    top: 45px; height: calc(100vh - 45px);
+    top: calc(45px + env(safe-area-inset-top, 0px)); height: calc(100vh - 45px);
     border-bottom: 0; border-right: 1px solid var(--line);
     padding: 16px 10px;
   }
@@ -113,7 +133,7 @@ h3 { font-size: 1rem; margin: 18px 0 8px; }
   border: 1px solid var(--line); background: var(--bg); color: var(--text);
 }
 .btn:hover { border-color: var(--rokusho); }
-.btn.primary { background: var(--rokusho); border-color: var(--rokusho); color: #fff; }
+.btn.primary { background: var(--rokusho); border-color: var(--rokusho); color: var(--on-accent); }
 .btn.danger { color: var(--sabi); }
 .btn.danger:hover { border-color: var(--sabi); }
 .btn.ghost { border-color: transparent; }
@@ -148,7 +168,7 @@ textarea { min-height: 84px; resize: vertical; }
   padding: 4px 9px; border-radius: 14px; border: 1px solid var(--line); background: var(--bg); color: var(--muted);
 }
 .stages button.past { color: var(--rokusho); border-color: var(--rokusho-soft); background: var(--rokusho-soft); }
-.stages button.current { background: var(--rokusho); border-color: var(--rokusho); color: #fff; }
+.stages button.current { background: var(--rokusho); border-color: var(--rokusho); color: var(--on-accent); }
 
 .table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
 table { width: 100%; border-collapse: collapse; font-size: .88rem; }
@@ -174,15 +194,18 @@ pre.prompt {
 dialog {
   border: 1px solid var(--line); border-radius: 10px; padding: 0;
   width: min(560px, calc(100vw - 24px)); max-height: calc(100vh - 40px);
+  background: var(--bg); color: var(--text);
 }
+dialog.confirm { width: min(400px, calc(100vw - 24px)); padding: 18px; }
+dialog.confirm p { margin: 0 0 8px; }
 dialog::backdrop { background: rgba(0,0,0,.25); }
 dialog form { padding: 18px 18px 14px; }
 dialog h2 { margin: 0 0 14px; }
 .modal-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; position: sticky; bottom: 0; background: var(--bg); padding-top: 8px; }
 
 .toast {
-  position: fixed; left: 50%; bottom: 20px; transform: translateX(-50%);
-  background: var(--text); color: #fff; padding: 8px 16px; border-radius: 20px; font-size: .85rem;
+  position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--text); color: var(--bg); padding: 8px 16px; border-radius: 20px; font-size: .85rem;
   opacity: 0; pointer-events: none; transition: opacity .2s;
 }
 .toast.show { opacity: 1; }

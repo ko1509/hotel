@@ -123,6 +123,10 @@ const ICONS = {
   check: '<rect x="3.5" y="3.5" width="17" height="17" rx="3"/><path d="m8 12.5 3 3 5.5-6"/>',
   image: '<rect x="3" y="4.5" width="18" height="15" rx="2"/><circle cx="8.5" cy="9.5" r="1.6"/><path d="m21 15.5-5-5-9 9"/>',
   alert: '<path d="M12 4 2.8 19.5h18.4z"/><path d="M12 10v4M12 16.8h.01"/>',
+  chart: '<path d="M4 4v16h16"/><path d="m7.5 15 3.5-4.5 3 2.5 4.5-6"/>',
+  globe: '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c2.5 2.7 3.8 5.7 3.8 9S14.5 18.3 12 21c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/>',
+  people: '<circle cx="9" cy="8.5" r="3.2"/><path d="M3.5 19.5c.4-3.3 2.6-5.3 5.5-5.3s5.1 2 5.5 5.3M16 5.7a3 3 0 0 1 0 5.6M18 14.6c1.7.7 2.8 2.3 3 4.9"/>',
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
   steps: '<circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/><path d="M7 12h3M14 12h3"/>',
 };
 
@@ -249,6 +253,7 @@ function defaultState() {
       revenueGoal: 50000,
       goalIsMonthly: true,
       goalDeadline: '',
+      ga4Id: '',
       articlesPerIssue: 5,
       prepMonths: 2,
       colorMain: '#8c4a2a',
@@ -414,6 +419,20 @@ async function loadSiteBody(id) {
     site.bodies.set(id, d.exists ? d.data() : { missing: true });
   } catch { site.bodies.set(id, { missing: true }); }
   if (currentRoute().name === 'site' && currentRoute().arg === id) rerender();
+}
+
+// ---------- アクセス解析（毎朝の取り込みが analytics/summary に書く。アプリは読むだけ） ----------
+
+const ga = { summary: null, loaded: false, loading: null };
+
+function loadAnalytics() {
+  if (!cloud.db) return Promise.resolve();
+  ga.loading ||= cloud.db.doc('analytics/summary').get().then(d => {
+    ga.summary = d.exists ? d.data() : null;
+    ga.loaded = true;
+    if (['analytics', 'dashboard'].includes(currentRoute().name)) rerender();
+  }).catch(e => { console.warn('analytics failed', e); ga.loading = null; });
+  return ga.loading;
 }
 
 function normUrl(u) { return String(u || '').trim().replace(/^https?:\/\//i, '').replace(/[?#].*$/, '').replace(/\/+$/, '').toLowerCase(); }
@@ -620,6 +639,7 @@ const ROUTES = [
   ['issues', '号', '号', 'issue'],
   ['hotels', 'ホテル記事', 'ホテル', 'hotel'],
   ['archive', 'アーカイブ', 'アーカイブ', 'archive'],
+  ['analytics', 'アクセス', 'アクセス', 'chart'],
   ['drawings', '線図', '線図', 'compass'],
   ['affiliate', 'アフィリエイト', '収益', 'yen'],
   ['sns', '集客・SNS', '集客', 'megaphone'],
@@ -659,7 +679,7 @@ function render() {
     dashboard: viewDashboard, issues: viewIssues, issue: () => viewIssue(arg), hotels: viewHotels,
     hotel: () => viewHotel(arg), drawings: viewDrawings, affiliate: viewAffiliate, sns: viewSns,
     glossary: viewGlossary, routine: viewRoutine, decisions: viewDecisions, settings: viewSettings,
-    archive: viewArchive, article: () => viewArticle(arg), site: () => viewSite(arg),
+    archive: viewArchive, article: () => viewArticle(arg), site: () => viewSite(arg), analytics: viewAnalytics,
   };
   $('#view').innerHTML = (views[name] || viewDashboard)();
   renderNav();
@@ -673,8 +693,18 @@ function rerender() {
 
 // ---------- 画面：ダッシュボード ----------
 
+function gaCard() {
+  const t = ga.summary?.ranges?.[30]?.totals;
+  return `<a class="card link" href="#/analytics">
+    <div class="kpi-label">${icon('chart')}直近30日のユーザー</div>
+    ${t ? `<div class="kpi">${t.users.toLocaleString('ja-JP')}<small>人</small></div><div class="meta">${t.sessions.toLocaleString('ja-JP')}セッション・${t.views.toLocaleString('ja-JP')}表示</div>`
+      : `<div class="kpi">—</div><div class="meta">${cloud.db ? (ga.loaded ? 'GA4は未接続です' : '読み込み中…') : 'クラウド保存時に表示'}</div>`}
+  </a>`;
+}
+
 function viewDashboard() {
   loadSitePosts();
+  loadAnalytics();
   const st = state.settings;
   const ni = nextIssue();
   const t = today();
@@ -727,6 +757,10 @@ function viewDashboard() {
     const age = (Date.now() - new Date(site.meta.syncedAt)) / 864e5;
     if (age > 2) alerts.push(`サイトからの記事の取り込みが${Math.floor(age)}日止まっています。スケジュールされたタスクの実行結果を確認してください。`);
   }
+  if (ga.summary) {
+    const age = (Date.now() - new Date(ga.summary.syncedAt)) / 864e5;
+    if (age > 2) alerts.push(`アクセス解析の取り込みが${Math.floor(age)}日止まっています。<a href="#/analytics">アクセスへ</a>`);
+  }
   if (site.loaded) {
     const lag = state.hotels.filter(h => h.stage < STAGE_PUBLISHED && sitePostsFor(h).length);
     if (lag.length) alerts.push(`サイトで公開中なのに、段階が「公開済」になっていないホテルが${lag.length}件あります。<a href="#/archive">アーカイブへ</a>`);
@@ -742,7 +776,8 @@ function viewDashboard() {
   return `<h1>ダッシュボード</h1>
   <p class="sub">${fmtDate(ymd(t))}・第${isoWeek(t).split('-W')[1]}週</p>
   <div class="grid two">${issueCard}${revCard}</div>
-  <div class="grid two" style="margin-top:12px">${routineCard}
+  <div class="grid three" style="margin-top:12px">${routineCard}
+    ${gaCard()}
     <a class="card link" href="#/decisions"><div class="kpi-label">${icon('decision')}未決定事項</div><div class="kpi">${openDecisions.length}<small>件</small></div></a>
   </div>
   <h2>${icon('alert')}確認すること</h2>
@@ -1357,6 +1392,150 @@ function viewSite(id) {
   </article>`;
 }
 
+// ---------- 画面：アクセス ----------
+
+let gaRange = '30';
+
+const CHANNEL_JA = {
+  'Organic Search': '検索', 'Direct': '直接アクセス', 'Referral': '他のサイト', 'Organic Social': 'SNS',
+  'Paid Search': '検索広告', 'Paid Social': 'SNS広告', 'Email': 'メール', 'Display': 'ディスプレイ広告',
+  'Organic Video': '動画', 'Affiliates': 'アフィリエイト', 'Unassigned': '不明', 'Cross-network': 'クロスネットワーク',
+};
+const DEVICE_JA = { mobile: 'スマホ', desktop: 'パソコン', tablet: 'タブレット', 'smart tv': 'テレビ' };
+
+function countryName(c) {
+  if (!c.name) return '不明';
+  try { return c.code ? new Intl.DisplayNames(['ja'], { type: 'region' }).of(c.code.toUpperCase()) || c.name : c.name; } catch { return c.name; }
+}
+const n0 = v => Number(v || 0).toLocaleString('ja-JP');
+
+// 横棒のランキング。幅は最大値に対する割合
+function hbars(items, nameOf, valueOf, unit = '人') {
+  if (!items.length) return '<div class="meta">データがありません</div>';
+  const max = Math.max(...items.map(valueOf), 1);
+  const total = items.reduce((a, i) => a + valueOf(i), 0) || 1;
+  return `<ul class="hbars">${items.map(i => `<li>
+    <div class="row"><span class="name">${esc(nameOf(i))}</span><span class="val">${n0(valueOf(i))}${unit}<small>${Math.round(valueOf(i) / total * 100)}%</small></span></div>
+    <div class="bar"><i style="width:${Math.max(2, Math.round(valueOf(i) / max * 100))}%"></i></div>
+  </li>`).join('')}</ul>`;
+}
+
+// 日ごとの棒グラフ。高さは最大値に対する割合で、目盛りは切りのよい値にする
+function dailyChart(days) {
+  if (!days.length) return '';
+  const max = Math.max(...days.map(d => d.users), 1);
+  // 上限は2の倍数に切り上げ、真ん中の目盛りも整数になるようにする
+  const unit = 2 * 10 ** Math.max(0, Math.floor(Math.log10(max)) - 1);
+  const top = Math.ceil(max / unit) * unit;
+  const fmt = d => { const [, m, dd] = d.split('-'); return `${+m}/${+dd}`; };
+  const mid = days[Math.floor(days.length / 2)];
+  const total = days.reduce((a, d) => a + d.users, 0);
+  const best = days.reduce((a, d) => (d.users > a.users ? d : a), days[0]);
+  return `<div class="chart">
+    <div class="yaxis"><span>${n0(top)}</span><span>${n0(top / 2)}</span><span>0</span></div>
+    <div class="plot"><div class="bars" style="--n:${days.length}">${days.map(d => `<i style="height:${Math.round(d.users / top * 100)}%" title="${fmt(d.date)}：${n0(d.users)}人・${n0(d.sessions)}セッション"></i>`).join('')}</div>
+      <div class="xaxis"><span>${fmt(days[0].date)}</span><span>${fmt(mid.date)}</span><span>${fmt(days.at(-1).date)}</span></div></div>
+  </div>
+  <p class="meta">1日あたりのユーザー数。平均 ${n0(Math.round(total / days.length))}人／日・最多 ${n0(best.users)}人（${fmt(best.date)}）</p>`;
+}
+
+// ページに埋め込むとき、文字列の中の script の閉じタグでページ側のスクリプトが終わってしまう。バックスラッシュ付きで書く
+function snippet(id) {
+  return `<!-- Google tag (GA4) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=${id}"><\/script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '${id}');
+<\/script>`;
+}
+
+function setupGuide(open) {
+  const id = (state.settings.ga4Id || '').trim();
+  const valid = /^G-[A-Z0-9]{6,14}$/i.test(id);
+  return `<details class="setup" ${open ? 'open' : ''}><summary>${icon('settings')}GA4の設定手順</summary>
+    <ol class="steps-list">
+      <li><b>GA4のプロパティを作る。</b>Googleアナリティクスで、プロパティと「ウェブ」のデータストリーム（sumibiki.com）を作り、<b>測定ID</b>（G-で始まる）を下に入れます。
+        <div class="field" style="margin:10px 0 0"><label for="s-ga4Id">測定ID</label><input id="s-ga4Id" type="text" data-s="ga4Id" value="${esc(id)}" placeholder="G-XXXXXXXXXX" autocomplete="off"></div>
+        ${id && !valid ? '<p class="meta warn-text">測定IDの形式が違います。「G-」で始まる10文字前後のIDです。</p>' : ''}</li>
+      <li><b>タグをサイトに入れる。</b>${valid ? `次のタグをコピーし、WordPressの管理画面で、SWELLの「外観 → カスタマイズ → 高度な設定 → headタグ終了直前に出力するコード」に貼ります（メニュー名はSWELLのバージョンで少し違うことがあります）。日本語と英語は同じサイトなので、1か所で両方に入ります。
+        <pre class="prompt">${esc(snippet(id.toUpperCase()))}</pre><div class="toolbar"><button class="btn small" data-act="ga-copy-snippet">${icon('copy')}タグをコピー</button></div>` : '測定IDを入れると、貼り付けるタグがここに表示されます。'}</li>
+      <li><b>データを取るための鍵を作る。</b>Google Cloud で「Google Analytics Data API」を有効にし、サービスアカウントを作って、JSONキーをダウンロードします。</li>
+      <li><b>GA4に閲覧権限を渡す。</b>GA4の「管理 → プロパティのアクセス管理」で、サービスアカウントのメールアドレスを<b>閲覧者</b>として追加します。</li>
+      <li><b>環境に登録する。</b>Claude Code の環境設定（クラウド環境のメニュー → 編集）に、<code>GA4_SERVICE_ACCOUNT_JSON</code>（JSONキーの中身）と <code>GA4_PROPERTY_ID</code>（GA4の数字のプロパティID）を登録します。鍵はチャットに貼らないでください。</li>
+      <li><b>翌朝から取り込まれます。</b>サイトの記事の取り込みと同じ毎朝のタスクが、前日までのデータを書き込みます。タグを入れてからGA4に数字が出るまでは、通常1日ほどかかります。</li>
+      <li><b>自分のアクセスを除く。</b>運営者の閲覧が混ざらないよう、GA4の「データストリーム → タグ設定を行う → 内部トラフィックの定義」で自分のIPを登録しておくと、数字が正確になります。</li>
+    </ol>
+    <p class="meta">Googleアナリティクスはクッキーで統計を取るため、プライバシーポリシーのページに利用目的を書いておきます（マニュアル1章の法的表記）。</p>
+  </details>`;
+}
+
+function viewAnalytics() {
+  loadAnalytics();
+  loadSitePosts();
+  const head = `<h1>アクセス</h1>
+  <p class="sub">サイトに、どこから・何人が来たか。GA4のデータを毎朝取り込んで表示します。</p>`;
+  if (!cloud.db) return `${head}<div class="empty">${icon('chart')}<div>アクセスの表示は、クラウドに保存しているとき（アーティファクト版）に使えます。</div></div>${setupGuide(false)}`;
+  if (!ga.loaded) return `${head}<div class="empty">${icon('chart')}<div>読み込み中…</div></div>`;
+  const sum = ga.summary;
+  if (!sum) return `${head}<div class="empty">${icon('chart')}<div>GA4はまだ接続されていません。下の手順で設定すると、翌朝からここに表示されます。</div></div>${setupGuide(true)}`;
+
+  const R = sum.ranges[gaRange];
+  const days = (sum.daily || []).slice(-Number(gaRange));
+  const age = (Date.now() - new Date(sum.syncedAt)) / 864e5;
+  const empty = !R.totals.sessions && !(sum.ranges[90]?.totals.sessions);
+  const organic = R.channels.find(c => c.name === 'Organic Search');
+  const sitePath = p => { try { return new URL(p.link).pathname.replace(/\/+$/, '') || '/'; } catch { return ''; } };
+  const postFor = path => site.posts.find(p => sitePath(p) === (path.replace(/\/+$/, '') || '/'));
+  const siteBase = (site.meta?.site || 'https://sumibiki.com').replace(/\/+$/, '');
+  const clicks = R.outbound;
+
+  return `${head}
+  <p class="site-line">${icon('chart')}GA4から毎日取り込み・最終取得 ${new Date(sum.syncedAt).toLocaleString('ja-JP', { dateStyle: 'medium', timeStyle: 'short' })}・データは${sum.lastDate ? fmtDate(sum.lastDate) : '前日'}まで${sum.timeZone ? `（${esc(sum.timeZone)}）` : ''}</p>
+  ${age > 2 ? `<div class="alert">取り込みが${Math.floor(age)}日止まっています。スケジュールされたタスクの実行結果を確認してください。</div>` : ''}
+  <div class="toolbar"><div class="seg" role="group" aria-label="期間">${['7', '30', '90'].map(r => `<button data-act="ga-range" data-range="${r}" class="${gaRange === r ? 'on' : ''}">直近${r}日</button>`).join('')}</div></div>
+  ${empty ? `<div class="alert">まだアクセスの記録がありません。タグを入れてからGA4に数字が出るまで、通常1日ほどかかります。</div>` : ''}
+
+  <div class="grid two">
+    <div class="card"><div class="kpi-label">${icon('people')}ユーザー</div><div class="kpi">${n0(R.totals.users)}<small>人</small></div></div>
+    <div class="card"><div class="kpi-label">${icon('search')}検索からの流入</div><div class="kpi">${n0(organic?.sessions)}<small>セッション</small></div><div class="meta">全体の${R.totals.sessions ? Math.round((organic?.sessions || 0) / R.totals.sessions * 100) : 0}%</div></div>
+    <div class="card"><div class="kpi-label">${icon('doc')}ページの表示</div><div class="kpi">${n0(R.totals.views)}<small>回</small></div><div class="meta">${n0(R.totals.sessions)}セッション・エンゲージメント率 ${Math.round((R.totals.engagementRate || 0) * 100)}%</div></div>
+    <div class="card"><div class="kpi-label">${icon('external')}外部リンクのクリック</div>${clicks === null ? '<div class="kpi">—</div><div class="meta">GA4の拡張計測（外部リンクのクリック）を有効にすると表示されます</div>' : `<div class="kpi">${n0(clicks.reduce((a, c) => a + c.clicks, 0))}<small>回</small></div><div class="meta">${clicks.slice(0, 3).map(c => `${esc(c.domain)} ${n0(c.clicks)}`).join('・') || '予約リンクのクリックの目安'}</div>`}</div>
+  </div>
+
+  <h2>${icon('chart')}推移</h2>
+  <div class="card">${dailyChart(days)}</div>
+
+  <h2>${icon('globe')}どこから来たか</h2>
+  <div class="grid two">
+    <div class="card"><h3>流入のきっかけ</h3>${hbars(R.channels, c => CHANNEL_JA[c.name] || c.name || '不明', c => c.users)}</div>
+    <div class="card"><h3>国・地域</h3>${hbars(R.countries, countryName, c => c.users)}</div>
+    <div class="card"><h3>都市</h3>${hbars(R.cities.filter(c => c.city), c => [c.city, c.country && c.country !== c.city ? countryName({ name: c.country }) : ''].filter(Boolean).join('・'), c => c.users)}</div>
+    <div class="card"><h3>端末</h3>${hbars(R.devices, d => DEVICE_JA[d.name] || d.name || '不明', d => d.users)}</div>
+  </div>
+
+  <h3>参照元（どのサイト・検索から）</h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th>参照元 / メディア</th><th class="num">ユーザー</th><th class="num">セッション</th></tr></thead>
+    <tbody>${R.sources.map(r => `<tr><td>${esc(r.source)} <span class="meta">/ ${esc(r.medium)}</span></td><td class="num">${n0(r.users)}</td><td class="num">${n0(r.sessions)}</td></tr>`).join('') || '<tr><td colspan="3" class="meta">データがありません</td></tr>'}</tbody>
+  </table></div>
+
+  <h2>${icon('doc')}よく見られたページ</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>ページ</th><th class="num">表示</th><th class="num">ユーザー</th></tr></thead>
+    <tbody>${R.pages.map(r => {
+      const post = postFor(r.path);
+      const hotel = post && hotelForPost(post);
+      const title = post?.title || r.title || r.path;
+      const link = post ? `<a href="#/site/${post.id}">${esc(title)}</a>` : `<a href="${esc(siteBase + r.path)}" target="_blank" rel="noopener">${esc(title)}</a>`;
+      return `<tr><td>${link}<div class="meta">${esc(r.path)}${hotel ? ` ・ <a href="#/hotel/${hotel.id}">${esc(hotel.nameJa)}</a>` : ''}</div></td><td class="num">${n0(r.views)}</td><td class="num">${n0(r.users)}</td></tr>`;
+    }).join('') || '<tr><td colspan="3" class="meta">データがありません</td></tr>'}</tbody>
+  </table></div>
+
+  ${setupGuide(false)}`;
+}
+
 // ---------- 画面：線図 ----------
 
 function viewDrawings() {
@@ -1656,6 +1835,9 @@ function viewSettings() {
     ${sf('disclosureText', '広告表記の文言', 'text', { wide: true })}
   </div>
 
+  <h2>アクセス解析</h2>
+  <div class="fields">${sf('ga4Id', 'GA4の測定ID', 'text', { placeholder: 'G-XXXXXXXXXX', hint: '設定手順とタグは「アクセス」画面にあります。' })}</div>
+
   <h2>サーバー・バックアップのメモ</h2>
   <div class="fields">${sf('backupNote', 'ConoHa WINGの自動バックアップ・復元手順など', 'textarea', { wide: true, hint: 'パスワードはここに書かず、パスワード管理ツールで保管してください。' })}</div>
 
@@ -1772,6 +1954,11 @@ const actions = {
     copyText(lang === 'en' ? promptEn(h) : promptJa(h));
   },
   'article-lang': ({ lang }) => { articleLang = lang; rerender(); },
+  'ga-range': ({ range }) => { gaRange = range; rerender(); },
+  'ga-copy-snippet': () => {
+    const id = (state.settings.ga4Id || '').trim().toUpperCase();
+    if (/^G-[A-Z0-9]{6,14}$/.test(id)) copyText(snippet(id));
+  },
   'archive-show': ({ show }) => { archiveFilter.show = show; rerender(); },
   'eyecatch-delete': async ({ id }) => {
     const h = hotelById(id);
@@ -1888,7 +2075,7 @@ document.addEventListener('change', e => {
     const k = el.dataset.s;
     state.settings[k] = el.type === 'checkbox' ? el.checked : el.type === 'number' ? Number(el.value) : el.value;
     save();
-    if (k.startsWith('color')) rerender();
+    if (k.startsWith('color') || k === 'ga4Id') rerender();
     return;
   }
   if (el.dataset.routine) {

@@ -388,14 +388,14 @@ async function connectCloud() {
 }
 
 // ---------- サイトから取り込んだ記事（毎日の取り込みが書く。アプリからは読むだけ） ----------
-// app/site に取得の記録、siteposts/<id> に一覧用、sitebodies/<id> に本文を置く。
+// sitesync/meta に取得の記録、siteposts/<id> に一覧用、sitebodies/<id> に本文を置く。
 
 const site = { meta: null, posts: [], loaded: false, loading: null, bodies: new Map() };
 
 async function loadSiteMeta() {
   if (!cloud.db) return;
   try {
-    const m = await cloud.db.doc('app/site').get();
+    const m = await cloud.db.doc('sitesync/meta').get();
     site.meta = m.exists ? m.data() : null;
   } catch (e) { console.warn('site meta failed', e); }
 }

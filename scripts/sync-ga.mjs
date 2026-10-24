@@ -83,8 +83,9 @@ const num = v => Number(v) || 0;
 const NOT_SET = new Set(['(not set)', '(other)', '']);
 const label = v => (NOT_SET.has(v) ? '' : v);
 
+// ディメンションなしの集計の行には dimensionValues が無い（実際のAPIの応答）。無ければ空として扱う
 function rows(report) {
-  return (report?.rows || []).map(r => [r.dimensionValues.map(d => d.value), r.metricValues.map(m => num(m.value))]);
+  return (report?.rows || []).map(r => [(r.dimensionValues || []).map(d => d.value), (r.metricValues || []).map(m => num(m.value))]);
 }
 
 const M = [{ name: 'activeUsers' }, { name: 'sessions' }, { name: 'screenPageViews' }];

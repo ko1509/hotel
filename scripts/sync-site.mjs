@@ -8,7 +8,7 @@
 // 出力（--out の下）:
 //   siteposts/<id>.json   一覧用（タイトル・リンク・カテゴリー・小さなアイキャッチ）
 //   sitebodies/<id>.json  記事ページ用（本文HTML・大きなアイキャッチ・本文中の画像）
-//   app-site.json         取得の記録（app/site に書く）
+//   app-site.json         取得の記録（sitesync/meta に書く）
 //   plan.json             書く文書と消す文書の一覧
 import { mkdirSync, writeFileSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
